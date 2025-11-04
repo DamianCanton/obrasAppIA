@@ -1,3 +1,19 @@
+/**
+ * Architect Layout Component
+ *
+ * Main layout wrapper for architect-role pages.
+ * Provides responsive navigation with:
+ * - Fixed sidebar on desktop (width: 10rem)
+ * - Slide-out drawer for mobile navigation
+ * - Missing items menu component
+ * - Role-based access control
+ *
+ * Layout Structure:
+ * - Header: Toggle button (mobile only) + status bar
+ * - Sidebar: Fixed navigation menu (desktop) or drawer (mobile)
+ * - Main: Page content area with router outlet
+ */
+
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';

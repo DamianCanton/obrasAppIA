@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiBaseUrl: 'https://obras-api-production.up.railway.app',
+  apiBaseUrl: 'http://localhost:3000',
 };

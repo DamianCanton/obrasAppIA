@@ -1,10 +1,32 @@
+/**
+ * Elements Service
+ *
+ * Manages inventory/elements state and operations.
+ * Handles elements fetching, caching, and provides computed categories and locations.
+ *
+ * Key Features:
+ * - Reactive state management using Angular signals
+ * - Derived computed signals for categories and locations
+ * - Request caching to prevent duplicate API calls
+ * - Loading/loaded state tracking
+ * - Elements filtering and search
+ *
+ * Data Structure:
+ * - Elements: List of all inventory items
+ * - Categories: Unique categories derived from elements
+ * - Locations: Unique storage locations (deposits or constructions)
+ */
+
 import { Injectable, signal, computed } from '@angular/core';
 import { ApiService } from '../core/api';
 import { Observable, of } from 'rxjs';
 import { finalize, shareReplay, tap } from 'rxjs/operators';
 import { Element } from '../models/interfaces.model';
 
+/** Type for category option in dropdown/filter */
 export type CategoryOpt = { id: number; name: string };
+
+/** Type for location option (deposit or construction site) */
 export type LocationOpt = {
   key: string;
   id: number;
@@ -14,9 +36,14 @@ export type LocationOpt = {
 
 @Injectable({ providedIn: 'root' })
 export class ElementsService {
+  /** Signal containing all elements/inventory items */
   elements = signal<Element[]>([]);
 
-  // 🔹 Categorías únicas derivadas
+  /**
+   * Computed signal for unique categories
+   * Automatically derives categories from elements list
+   * Updates whenever elements signal changes
+   */
   categories = computed<CategoryOpt[]>(() => {
     const map = new Map<number, CategoryOpt>();
     for (const el of this.elements()) {
@@ -26,7 +53,11 @@ export class ElementsService {
     return Array.from(map.values());
   });
 
-  // 🔹 Ubicaciones únicas derivadas (por tipo + id)
+  /**
+   * Computed signal for unique storage locations
+   * Groups locations by type (deposit or construction) and ID
+   * Used for filtering elements by location
+   */
   locations = computed<LocationOpt[]>(() => {
     const map = new Map<string, LocationOpt>();
     for (const el of this.elements()) {
@@ -38,24 +69,34 @@ export class ElementsService {
           key,
           id: loc.locationId,
           type: loc.locationType,
-          // Si más adelante unís con los nombres reales, reemplazá el label:
+          // TODO: Join with actual names from API for better labels
           name:
             loc.locationType === 'deposit'
-              ? `Depósito #${loc.locationId}`
-              : `Obra #${loc.locationId}`,
+              ? `Deposit #${loc.locationId}`
+              : `Construction #${loc.locationId}`,
         });
       }
     }
     return Array.from(map.values());
   });
 
+  /** Tracks if data has been loaded at least once */
   private _loaded = signal(false);
+  /** Tracks if loading operation is currently in progress */
   private _loading = signal(false);
-  private inflight$?: Observable<Element[]>; // <- cache de la request en curso
+  /** In-flight request cache to prevent duplicate API calls */
+  private inflight$?: Observable<Element[]>;
 
   constructor(private api: ApiService) {}
 
-  /** Llama a backend y llena signals */
+  /**
+   * Fetch all elements for an architect
+   * Implements request caching to avoid duplicate concurrent calls
+   * Updates elements signal with response
+   *
+   * @param {number} architectId - ID of the architect
+   * @returns {Observable<Element[]>} Observable of elements array
+   */
   fetchByArchitect(architectId: number): Observable<Element[]> {
     this._loading.set(true);
     return this.api
@@ -71,6 +112,14 @@ export class ElementsService {
       );
   }
 
+  /**
+   * Initializes elements data with caching
+   * Returns cached data if available
+   * Prevents duplicate concurrent requests
+   *
+   * @param {number} architectId - ID of the architect
+   * @returns {Observable<Element[]>} Observable of elements array
+   */
   init(architectId: number): Observable<Element[]> {
     if (this._loaded()) return of(this.elements());
     if (this._loading() && this.inflight$) return this.inflight$;
@@ -83,20 +132,40 @@ export class ElementsService {
     return this.inflight$;
   }
 
-  /** Garantiza datos: usa init() */
+  /**
+   * Ensures elements data is loaded
+   * Uses init() internally for caching logic
+   *
+   * @param {number} architectId - ID of the architect
+   * @returns {Observable<Element[]>} Observable of elements array
+   */
   ensureLoaded(architectId: number): Observable<Element[]> {
     return this.init(architectId);
   }
 
-  /** Fuerza refresh desde backend (por si hiciste CRUD) */
+  /**
+   * Force refresh elements from backend
+   * Used after CRUD operations to get latest data
+   *
+   * @param {number} architectId - ID of the architect
+   * @returns {Observable<Element[]>} Observable of fresh elements array
+   */
   refresh(architectId: number): Observable<Element[]> {
     return this.fetchByArchitect(architectId).pipe(shareReplay(1));
   }
 
-  /** Helpers si los necesitás */
+  /**
+   * Get loading state
+   * @returns {boolean} true if currently loading
+   */
   get loaded() {
     return this._loaded();
   }
+
+  /**
+   * Get loaded state
+   * @returns {boolean} true if data has been loaded
+   */
   get loading() {
     return this._loading();
   }

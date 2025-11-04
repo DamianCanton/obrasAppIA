@@ -1,3 +1,24 @@
+/**
+ * Construction Management Component
+ *
+ * Main page for architects to manage construction projects.
+ * Displays list of constructions and provides CRUD operations.
+ *
+ * Key Features:
+ * - Display all constructions for authenticated architect
+ * - Create new construction projects
+ * - Delete existing constructions with confirmation
+ * - Navigate to construction detail page
+ * - Real-time list updates after operations
+ * - Toast notifications for user feedback
+ *
+ * Data Flow:
+ * 1. Component initializes and fetches architect's constructions
+ * 2. User can create new construction via modal dialog
+ * 3. List updates immediately after successful creation/deletion
+ * 4. Navigation to detail page for viewing/editing specific projects
+ */
+
 import { Component, inject, Inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { ApiService } from '../../core/api';
@@ -37,9 +58,13 @@ import { DialogModule } from 'primeng/dialog';
 })
 export class ConstructionComponent {
   private authService = inject(AuthService);
+  /** List of construction projects for current architect */
   works = signal<Construction[]>([]);
+  /** Form for creating new construction */
   formGroup: FormGroup;
-  architect = this.authService.user(); // reemplazar por auth real
+  /** Current authenticated architect */
+  architect = this.authService.user();
+  /** Controls visibility of add construction dialog */
   displayAddDialog = false;
 
   constructor(
@@ -49,22 +74,41 @@ export class ConstructionComponent {
     private messageService: MessageService,
     private fb: FormBuilder
   ) {
+    // Initialize form with required fields
     this.formGroup = this.fb.group({
       title: ['', Validators.required],
       description: ['', Validators.required],
     });
   }
 
+  /**
+   * Angular lifecycle hook - runs after component initialization
+   * Fetches constructions from API
+   */
   ngOnInit() {
     this.fetchWorks();
   }
 
+  /**
+   * Fetch all constructions for the authenticated architect
+   * Updates the works signal with API response
+   */
   fetchWorks() {
     this.api
       .request('GET', `architect/${this.architect?.id}/construction`)
       .subscribe((res) => this.works.set(res as Construction[]));
   }
 
+  /**
+   * Create a new construction project
+   *
+   * Process:
+   * 1. Validate form input
+   * 2. Send POST request with form data
+   * 3. Reset form on success
+   * 4. Refresh constructions list
+   * 5. Show success/error toast message
+   */
   createWork() {
     if (this.formGroup.invalid) return;
     this.api
@@ -79,8 +123,8 @@ export class ConstructionComponent {
           this.fetchWorks();
           this.messageService.add({
             severity: 'success',
-            summary: 'Obra creada',
-            detail: 'La obra fue creada correctamente',
+            summary: 'Construction Created',
+            detail: 'The construction project was created successfully',
             life: 2500,
           });
         },
@@ -88,13 +132,18 @@ export class ConstructionComponent {
           this.messageService.add({
             severity: 'error',
             summary: 'Error',
-            detail: 'No se pudo crear la obra',
+            detail: 'Could not create the construction project',
             life: 2500,
           });
         },
       });
   }
 
+  /**
+   * Show confirmation dialog before deleting construction
+   * @param {Event} event - Click event for positioning confirmation popup
+   * @param {number} id - ID of construction to delete
+   */
   confirmDeleteWork(event: Event, id: number) {
     this.confirmationService.confirm({
       target: event.currentTarget as EventTarget,
