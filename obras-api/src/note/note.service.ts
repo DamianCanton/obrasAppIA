@@ -19,10 +19,15 @@ export class NoteService {
   ) {}
 
   async create(dto: CreateNoteDto) {
+    const element = await this.elementRepo.findOne({
+      where: { id: dto.elementId },
+    });
+    if (!element) throw new NotFoundException('Elemento no encontrado');
+
     const note = this.noteRepo.create({
       title: dto.title,
       text: dto.text,
-      element: dto.element,
+      element,
       createdBy: dto.createdBy,
       createdByType: dto.createdByType,
     });
@@ -37,7 +42,10 @@ export class NoteService {
       newData: saved,
     });
 
-    return saved;
+    return this.noteRepo.findOne({
+      where: { id: saved.id },
+      relations: ['element'],
+    });
   }
 
   async findByElement(elementId: number) {
@@ -69,9 +77,8 @@ export class NoteService {
       table: 'note',
       recordId: saved.id,
       action: 'update',
-      actorId: (dto as any).updatedBy ?? (dto as any).created_by,
-      actorType: ((dto as any).updatedByType ??
-        (dto as any).created_by_type) as 'architect' | 'worker',
+      actorId: dto.updatedBy,
+      actorType: dto.updatedByType as 'architect' | 'worker',
       oldData: before,
       newData: saved,
     });
@@ -97,8 +104,8 @@ export class NoteService {
       table: 'note',
       recordId: note.id,
       action: 'delete',
-      actorId: dto.deleted_by,
-      actorType: dto.deleted_by_type as 'architect' | 'worker',
+      actorId: dto.deletedBy,
+      actorType: dto.deletedByType as 'architect' | 'worker',
       oldData: note,
     });
 

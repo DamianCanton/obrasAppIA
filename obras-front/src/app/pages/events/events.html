@@ -1,20 +1,17 @@
 <div class="p-4 w-full overflow-x-scroll sm:overflow-x-hidden">
   <h4 class="pb-2">Filtrar por:</h4>
   <div class="flex flex-column gap-3 mb-3">
-    <div class="flex mt-2 flex-column md:flex-row gap-2">
+    <div class="flex mt-2 flex-column md:flex-row gap-2 filters-row">
       <p-iftalabel>
-        <label for="type">Tipo</label>
+        <label for="table">Tabla</label>
         <select
           class="p-inputtext w-12rem"
-          [value]="filterActorType() ?? ''"
-          (change)="onActorChange($event)"
-          id="user"
+          [value]="filterTable() ?? ''"
+          (change)="onTableChange($event)"
+          id="table"
         >
-          <option [value]="''">Todos</option>
-          <option
-            *ngFor="let opt of actorTypeOptions"
-            [value]="opt.value ?? ''"
-          >
+          <option value="">Todas</option>
+          <option *ngFor="let opt of tableOptions" [value]="opt.value">
             {{ opt.label }}
           </option>
         </select>
@@ -28,7 +25,7 @@
           id="action"
         >
           <option [value]="''">Todos</option>
-          <option *ngFor="let opt of actionOptions" [value]="opt.value ?? ''">
+          <option *ngFor="let opt of actionOptions" [value]="opt.value">
             {{ opt.label }}
           </option>
         </select>
@@ -37,15 +34,12 @@
         <label for="user">Usuario</label>
         <select
           class="p-inputtext w-12rem"
-          [value]="filterAction() ?? ''"
+          [value]="filterActorType() ?? ''"
           (change)="onActorChange($event)"
           id="user"
         >
           <option [value]="''">Todos</option>
-          <option
-            *ngFor="let opt of actorTypeOptions"
-            [value]="opt.value ?? ''"
-          >
+          <option *ngFor="let opt of actorTypeOptions" [value]="opt.value">
             {{ opt.label }}
           </option>
         </select>
@@ -88,7 +82,9 @@
       [value]="filteredEvents()"
       [rows]="10"
       [paginator]="true"
-      [style]="{ 'min-width': '40rem' }"
+      responsiveLayout="stack"
+      [breakpoint]="'960px'"
+      styleClass="events-table"
     >
       <ng-template pTemplate="header">
         <tr class="text-center">
@@ -103,7 +99,9 @@
           <td>{{ event.createdAt | date:'yyyy-MM-dd HH:mm' }}</td>
           <td>{{ event.action }}</td>
           <td (click)="openChangedByInfo(event.changedByUser)">
-            <p-button> {{ event.changedByUser.name}} </p-button>
+            <p-button>
+              {{ event.changedByUser?.name || 'Ver usuario' }}
+            </p-button>
           </td>
           <td (click)="goToDetail(event.id)">
             <p-button>Ver detalle</p-button>

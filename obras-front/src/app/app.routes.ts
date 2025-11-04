@@ -12,6 +12,7 @@ import { AuthGuard } from './guards/auth.guard';
 import { EventDetail } from './pages/event-detail/event-detail';
 import { NoteEditor } from './pages/note-editor/note-editor';
 import { MissingRegistry } from './pages/missing-registry/missing-registry';
+import { AdminGuide } from './pages/admin-guide/admin-guide';
 
 import { ArchitectLayout } from './layouts/architect-layout';
 import { WorkerLayout } from './layouts/worker-layout';
@@ -38,6 +39,11 @@ export const routes: Routes = [
       { path: 'notes', component: Notes },
       { path: 'note-editor/:id', component: NoteEditor },
       { path: 'note-editor/new', component: NoteEditor },
+      {
+        path: 'admin-guide',
+        component: AdminGuide,
+        data: { adminEmails: ['fede@ejemplo'] },
+      },
     ],
   },
 

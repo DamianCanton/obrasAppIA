@@ -50,7 +50,10 @@ import { AuthService } from '../services/auth.service';
               <p-button (click)="openDrawer()" icon="pi pi-bars" />
             </div>
             <div class="hidden lg:block"></div>
-            <app-missing-menu></app-missing-menu>
+            <app-missing-menu
+              *ngIf="auth.user()?.id as architectId"
+              [architectId]="architectId"
+            ></app-missing-menu>
           </div>
           <div class="p-3">
             <router-outlet></router-outlet>

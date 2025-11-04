@@ -24,11 +24,13 @@ export class ConstructionWorkerService {
   async create(architectId: number, dto: CreateConstructionWorkerDto) {
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
-    const construction = await this.constructionRepo.findOne({
-      where: { id: dto.constructionId },
-    });
-    if (!construction)
-      throw new NotFoundException('Construcción no encontrada');
+    if (dto.constructionId) {
+      const construction = await this.constructionRepo.findOne({
+        where: { id: dto.constructionId },
+      });
+      if (!construction)
+        throw new NotFoundException('Construcción no encontrada');
+    }
 
     const worker = this.workerRepo.create({
       name: dto.name,

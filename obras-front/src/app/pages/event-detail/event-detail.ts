@@ -17,24 +17,33 @@ export class EventDetail implements OnInit {
   private eventData = inject(EventData);
   private router = inject(Router);
 
-  eventId = Number(this.route.snapshot.paramMap.get('id')?.replace(':', ''));
+  eventId = Number(this.route.snapshot.paramMap.get('id'));
   event = this.eventData.eventById(this.eventId);
 
   ngOnInit(): void {
-    if (this.eventData.events.length == 0) {
-      this.eventData.fetchEvents();
+    if (!this.eventData.events().length) {
+      this.eventData.fetchEvents().subscribe();
     }
   }
 
-  parseAndFilter(objStr: string | null) {
-    if (!objStr) return null;
-    try {
-      const obj = JSON.parse(objStr);
-      if (obj.password) delete obj.password;
-      return obj;
-    } catch {
-      return null;
+  parseAndFilter(raw: any) {
+    if (!raw) return null;
+    let value = raw;
+    if (typeof raw === 'string') {
+      try {
+        value = JSON.parse(raw);
+      } catch {
+        return raw;
+      }
     }
+
+    if (typeof value === 'object' && value !== null) {
+      const clone = { ...value } as Record<string, unknown>;
+      delete clone['password'];
+      return clone;
+    }
+
+    return value;
   }
 
   getBetterTableName(tableName: string): string {

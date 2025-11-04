@@ -57,7 +57,7 @@
     [rows]="10"
     [rowsPerPageOptions]="[10, 25, 50]"
     [paginator]="true"
-    [globalFilterFields]="['name', 'category.name', 'location.name']"
+    [globalFilterFields]="['name', 'category.name', 'brand']"
     responsiveLayout="scroll"
   >
     <!-- Caption: buscador global -->
@@ -102,13 +102,16 @@
         <td>{{ el.category?.name || "-" }}</td>
         <td>
           {{
-            getLocationName(el.location?.locationId, el.location?.locationType)
+            getLocationName(
+              el.currentLocationId ?? el.location?.locationId,
+              el.currentLocationType ?? el.location?.locationType
+            )
           }}
         </td>
       </tr>
     </ng-template>
 
-    <ng-template #expandedrow let-el>
+    <ng-template pTemplate="rowexpansion" let-el>
       <tr>
         <td colspan="3">
           <div
@@ -221,15 +224,15 @@
 
         <div class="col-12 md:col-6">
           <p-iftalabel>
-            <label for="locationId">Ubicación*</label>
+            <label for="locationKey">Ubicación*</label>
             <select
               pInputText
-              id="locationId"
-              formControlName="locationId"
+              id="locationKey"
+              formControlName="locationKey"
               class="w-full"
-              (change)="onLocationChange($event)"
+              (change)="onFormLocationSelect($event)"
             >
-              <option *ngFor="let loc of locations()" [value]="loc.id">
+              <option *ngFor="let loc of locations()" [value]="loc.key">
                 {{ loc.name }} ({{
                   loc.type === "deposit" ? "Depósito" : "Obra"
                 }})

@@ -28,6 +28,10 @@ export class WorkerMenu {
   router = inject(Router);
 
   logout() {
+    const confirmed = window.confirm(
+      '¿Seguro que querés cerrar la sesión?'
+    );
+    if (!confirmed) return;
     this.authService.logout();
     this.router.navigate(['/login']);
   }

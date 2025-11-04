@@ -163,7 +163,7 @@ export class NoteEditor implements OnInit {
       }
       const dto: NoteCreateDto = {
         ...dtoBase,
-        element: { id: this.elementId },
+        elementId: this.elementId,
         createdBy: userId,
         createdByType: 'architect',
       };

@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsNumber, IsIn } from 'class-validator';
+import { IsNotEmpty, IsString, IsNumber, IsIn, IsInt } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateNoteDto {
@@ -13,7 +13,7 @@ export class CreateNoteDto {
   text: string;
 
   @ApiProperty()
-  @IsNumber()
+  @IsInt()
   elementId: number;
 
   @ApiProperty({ enum: ['architect', 'worker'] })
@@ -24,8 +24,4 @@ export class CreateNoteDto {
   @ApiProperty()
   @IsNumber()
   createdBy: number;
-
-  get element() {
-    return { id: this.elementId };
-  }
 }

@@ -60,15 +60,17 @@ export interface Deposit {
 export interface Element {
   id: number;
   name: string;
-  description: string;
+  description?: string;
   brand: string;
   provider: string;
-  quantity: number;
+  quantity?: number;
   buyDate: string;
   category: Category;
-  location?: Location;
-  architect: number;
-  note?: Note;
+  currentLocationType?: 'deposit' | 'construction' | null;
+  currentLocationId?: number | null;
+  location?: Location | null;
+  architect: number | Architect;
+  note?: Note | null;
   createdAt?: string;
 }
 

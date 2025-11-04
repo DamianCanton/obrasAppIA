@@ -129,12 +129,30 @@ export class MissingService {
   async updateStatusAsArchitect(
     id: number,
     dto: UpdateMissingStatusDto,
-    user: AuthUser,
+    user?: AuthUser,
   ) {
+    const actor: AuthUser | null =
+      user ??
+      (dto.actorRole
+        ? {
+            id: dto.actorId ?? 0,
+            role: dto.actorRole.toUpperCase() as AuthUser['role'],
+            architectId:
+              dto.actorRole.toUpperCase() === 'ARCHITECT'
+                ? dto.actorId ?? undefined
+                : undefined,
+            workerId:
+              dto.actorRole.toUpperCase() === 'WORKER'
+                ? dto.actorId ?? undefined
+                : undefined,
+          }
+        : null);
+
     const missing = await this.findOne(id);
     if (
-      user.role !== 'ARCHITECT' ||
-      user.architectId !== missing.architect.id
+      !actor ||
+      actor.role !== 'ARCHITECT' ||
+      actor.architectId !== missing.architect.id
     ) {
       throw new ForbiddenException(
         'Sólo el arquitecto asignado puede cambiar el estado',

@@ -1,5 +1,5 @@
 // src/construction-worker/dto/create-construction-worker.dto.ts
-import { IsString, IsInt, MinLength } from 'class-validator';
+import { IsString, IsInt, MinLength, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateConstructionWorkerDto {
@@ -12,7 +12,8 @@ export class CreateConstructionWorkerDto {
   @MinLength(6)
   password: string;
 
-  @ApiProperty()
+  @ApiProperty({ required: false, nullable: true })
+  @IsOptional()
   @IsInt()
-  constructionId: number;
+  constructionId?: number | null;
 }

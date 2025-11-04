@@ -1,7 +1,7 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { ApiService } from '../core/api';
-import { Observable, of } from 'rxjs';
-import { finalize, shareReplay, tap } from 'rxjs/operators';
+import { Observable, forkJoin, of } from 'rxjs';
+import { finalize, map, shareReplay, tap } from 'rxjs/operators';
 import { Element } from '../models/interfaces.model';
 
 export type CategoryOpt = { id: number; name: string };
@@ -15,6 +15,8 @@ export type LocationOpt = {
 @Injectable({ providedIn: 'root' })
 export class ElementsService {
   elements = signal<Element[]>([]);
+  private deposits = signal<Array<{ id: number; name: string }>>([]);
+  private constructions = signal<Array<{ id: number; title: string }>>([]);
 
   // 🔹 Categorías únicas derivadas
   categories = computed<CategoryOpt[]>(() => {
@@ -26,27 +28,29 @@ export class ElementsService {
     return Array.from(map.values());
   });
 
-  // 🔹 Ubicaciones únicas derivadas (por tipo + id)
+  // 🔹 Ubicaciones disponibles (depósitos + obras)
   locations = computed<LocationOpt[]>(() => {
-    const map = new Map<string, LocationOpt>();
-    for (const el of this.elements()) {
-      const loc = (el as any)?.location;
-      if (!loc?.locationType || !loc?.locationId) continue;
-      const key = `${loc.locationType}:${loc.locationId}`;
-      if (!map.has(key)) {
-        map.set(key, {
-          key,
-          id: loc.locationId,
-          type: loc.locationType,
-          // Si más adelante unís con los nombres reales, reemplazá el label:
-          name:
-            loc.locationType === 'deposit'
-              ? `Depósito #${loc.locationId}`
-              : `Obra #${loc.locationId}`,
-        });
-      }
+    const opts: LocationOpt[] = [];
+
+    for (const dep of this.deposits()) {
+      opts.push({
+        key: `deposit:${dep.id}`,
+        id: dep.id,
+        type: 'deposit',
+        name: dep.name || `Depósito #${dep.id}`,
+      });
     }
-    return Array.from(map.values());
+
+    for (const cons of this.constructions()) {
+      opts.push({
+        key: `construction:${cons.id}`,
+        id: cons.id,
+        type: 'construction',
+        name: cons.title || `Obra #${cons.id}`,
+      });
+    }
+
+    return opts;
   });
 
   private _loaded = signal(false);
@@ -55,31 +59,64 @@ export class ElementsService {
 
   constructor(private api: ApiService) {}
 
-  /** Llama a backend y llena signals */
-  fetchByArchitect(architectId: number): Observable<Element[]> {
+  private normalizeElement(raw: any): Element {
+    const currentLocationType =
+      raw?.currentLocationType ?? raw?.location?.locationType ?? null;
+    const currentLocationId =
+      raw?.currentLocationId ?? raw?.location?.locationId ?? null;
+
+    return {
+      ...raw,
+      currentLocationType,
+      currentLocationId,
+      location:
+        currentLocationType && currentLocationId
+          ? {
+              locationType: currentLocationType,
+              locationId: currentLocationId,
+            }
+          : null,
+    };
+  }
+
+  private loadAll(architectId: number): Observable<Element[]> {
     this._loading.set(true);
-    return this.api
-      .request<Element[]>('GET', `architect/${architectId}/element`)
-      .pipe(
-        tap({
-          next: (res) => {
-            this.elements.set(res);
-            this._loaded.set(true);
-          },
-        }),
-        finalize(() => this._loading.set(false))
-      );
+    return forkJoin({
+      elements: this.api.request<Element[]>(
+        'GET',
+        `architect/${architectId}/element`,
+      ),
+      deposits: this.api.request<Array<{ id: number; name: string }>>(
+        'GET',
+        `architect/${architectId}/deposit`,
+      ),
+      constructions: this.api.request<Array<{ id: number; title: string }>>(
+        'GET',
+        `architect/${architectId}/construction`,
+      ),
+    }).pipe(
+      tap(({ elements, deposits, constructions }) => {
+        const normalized = (elements ?? []).map((el) =>
+          this.normalizeElement(el),
+        );
+        this.elements.set(normalized);
+        this.deposits.set(deposits ?? []);
+        this.constructions.set(constructions ?? []);
+        this._loaded.set(true);
+      }),
+      map(() => this.elements()),
+      finalize(() => this._loading.set(false)),
+    );
   }
 
   init(architectId: number): Observable<Element[]> {
     if (this._loaded()) return of(this.elements());
     if (this._loading() && this.inflight$) return this.inflight$;
 
-    this.inflight$ = this.fetchByArchitect(architectId).pipe(
+    this.inflight$ = this.loadAll(architectId).pipe(
       shareReplay(1),
-      finalize(() => (this.inflight$ = undefined))
+      finalize(() => (this.inflight$ = undefined)),
     );
-    console.log(this.categories());
     return this.inflight$;
   }
 
@@ -90,7 +127,7 @@ export class ElementsService {
 
   /** Fuerza refresh desde backend (por si hiciste CRUD) */
   refresh(architectId: number): Observable<Element[]> {
-    return this.fetchByArchitect(architectId).pipe(shareReplay(1));
+    return this.loadAll(architectId).pipe(shareReplay(1));
   }
 
   /** Helpers si los necesitás */
@@ -103,27 +140,29 @@ export class ElementsService {
 
   /** CRUD con actualización local simple */
   create(architectId: number, dto: any): Observable<void> {
+    const payload = this.toPayload(dto);
     return this.api
-      .request<void>('POST', `architect/${architectId}/element`, dto)
+      .request<void>('POST', `architect/${architectId}/element`, payload)
       .pipe(
         tap(() => {
           // tras crear, refrescamos para mantener consistencia
-          this.fetchByArchitect(architectId).subscribe();
-        })
+          this.loadAll(architectId).subscribe();
+        }),
       );
   }
 
   update(architectId: number, elementId: number, dto: any): Observable<void> {
+    const payload = this.toPayload(dto);
     return this.api
       .request<void>(
         'PUT',
         `architect/${architectId}/element/${elementId}`,
-        dto
+        payload,
       )
       .pipe(
         tap(() => {
-          this.fetchByArchitect(architectId).subscribe();
-        })
+          this.loadAll(architectId).subscribe();
+        }),
       );
   }
 
@@ -135,5 +174,28 @@ export class ElementsService {
           this.elements.set(this.elements().filter((e) => e.id !== elementId));
         })
       );
+  }
+
+  private toPayload(dto: any) {
+    const currentLocation =
+      dto?.currentLocationType !== undefined ||
+      dto?.currentLocationId !== undefined
+        ? {
+            currentLocationType: dto.currentLocationType,
+            currentLocationId: dto.currentLocationId,
+          }
+        : {
+            currentLocationType: dto.locationType,
+            currentLocationId: dto.locationId,
+          };
+
+    return {
+      name: dto.name,
+      brand: dto.brand,
+      provider: dto.provider,
+      buyDate: dto.buyDate,
+      categoryId: dto.categoryId,
+      ...currentLocation,
+    };
   }
 }

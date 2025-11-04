@@ -1,98 +1,79 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# ObrasApp – API (NestJS)
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Backend modular en NestJS + TypeORM que expone los servicios de obras, elementos, depósitos, notas, faltantes y el historial de eventos para la app móvil/web.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Requisitos
 
-## Description
+- Node.js 20+
+- npm 10+
+- PostgreSQL 15+ (o Docker)
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Project setup
+## Instalación
 
 ```bash
-$ npm install
+npm install
 ```
 
-## Compile and run the project
+Configura las credenciales de base en `.env` (se incluye un ejemplo):
+
+```env
+NODE_ENV=development
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=admin
+DB_PASS=admin
+DB_NAME=testdb
+```
+
+## Ejecución
 
 ```bash
-# development
-$ npm run start
+# desarrollo con reload
+npm run start:dev
 
-# watch mode
-$ npm run start:dev
+# producción
+npm run start
 
-# production mode
-$ npm run start:prod
+# construir a dist/
+npm run build
 ```
 
-## Run tests
+Swagger queda disponible en <http://localhost:3000/api>.
+
+### Docker compose
+
+Se incluye `docker-compose.yml` para levantar PostgreSQL + API + Front de una manera rápida:
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+docker compose up --build
 ```
 
-## Deployment
+## Módulos principales
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+- **auth** – login de arquitectos y obreros con contraseñas `bcrypt` y logging de inicios de sesión.
+- **element** – CRUD de elementos, asignación de ubicación actual y registro en `events_history`.
+- **note** – creación/edición/borrado de notas sobre elementos, con tracking del actor (`createdBy/updatedBy/deletedBy`).
+- **missing** – gestión de faltantes con paginación y acciones de arquitecto (`status`).
+- **events-history** – listado enriquecido con datos del usuario que ejecutó cada acción.
+- **stadistics** – totales para dashboard y últimos movimientos derivados del historial.
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+## Cambios recientes
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
+- Eventos históricos guardan `oldData/newData` como JSON nativo y se sanitiza `changedByUser` para no exponer hashes.
+- Estadísticas reconocen descripciones traducidas de movimientos y normalizan datos antes de enviarlos.
+- Login de obreros valida contraseña `bcrypt` y emite evento “Obrero inició sesión”.
+- DTOs de notas alineados con el frontend (`elementId`, `updatedBy`, `deletedBy`).
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+## Pruebas manuales recomendadas
 
-## Resources
+1. Login de arquitecto y obrero (debe registrar eventos de sesión).
+2. Crear/editar/borrar elementos verificando que `events-history` se actualiza.
+3. Crear notas desde el front y comprobar que el backend exige `elementId` y registra el evento.
+4. Consultar `/architect/:id/stadistics` para confirmar movimientos recientes.
 
-Check out a few resources that may come in handy when working with NestJS:
+## Estilo de desarrollo
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+- Servicios centralizan las reglas de negocio y se apoyan en `EventsHistoryLoggerService` para los logs.
+- TypeORM se utiliza con `jsonb` para trackear snapshots y eventos.
+- Los DTOs usan `class-validator`; mantener los nombres en `camelCase` para que coincidan con el frontend.
 
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).

@@ -3,25 +3,14 @@ import { ApiService } from '../core/api';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { ElementsService } from './elements.service';
+import { Note } from '../models/interfaces.model';
 
 export type UserType = 'architect' | 'worker';
-
-export interface Note {
-  id: number;
-  title: string;
-  text: string;
-  createdAt: string;
-  element: { id: number };
-  createdBy?: number;
-  createdByType?: UserType;
-  updatedBy?: number;
-  updatedByType?: UserType;
-}
 
 export interface NoteCreateDto {
   title: string;
   text: string;
-  element: { id: number };
+  elementId: number;
   createdBy: number;
   createdByType: UserType;
 }
@@ -65,7 +54,22 @@ export class NotesService {
   create(dto: NoteCreateDto): Observable<Note> {
     return this.api
       .request<Note>('POST', 'note', dto)
-      .pipe(tap((created) => this.notes.update((curr) => [created, ...curr])));
+      .pipe(
+        tap((created) => {
+          this.notes.update((curr) => [
+            created,
+            ...curr.filter((n) => n.id !== created.id),
+          ]);
+
+          this.elementsSvc.elements.update((curr) =>
+            curr.map((el) =>
+              el.id === (created.element?.id ?? dto.elementId)
+                ? { ...el, note: created }
+                : el,
+            ),
+          );
+        }),
+      );
   }
 
   update(id: number, dto: NoteUpdateDto): Observable<Note> {
@@ -75,7 +79,14 @@ export class NotesService {
         tap((updated) =>
           this.notes.update((curr) =>
             curr.map((n) => (n.id === updated.id ? updated : n))
-          )
+          ),
+        ),
+        tap((updated) =>
+          this.elementsSvc.elements.update((curr) =>
+            curr.map((el) =>
+              el.note?.id === updated.id ? { ...el, note: updated } : el,
+            ),
+          ),
         )
       );
   }
@@ -84,7 +95,16 @@ export class NotesService {
     return this.api
       .request<void>('DELETE', `note/${id}`, dto)
       .pipe(
-        tap(() => this.notes.update((curr) => curr.filter((n) => n.id !== id)))
+        tap(() =>
+          this.notes.update((curr) => curr.filter((n) => n.id !== id)),
+        ),
+        tap(() =>
+          this.elementsSvc.elements.update((curr) =>
+            curr.map((el) =>
+              el.note?.id === id ? { ...el, note: null } : el,
+            ),
+          ),
+        ),
       );
   }
 }

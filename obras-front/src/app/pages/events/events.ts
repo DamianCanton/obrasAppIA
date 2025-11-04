@@ -2,12 +2,8 @@ import { CommonModule } from '@angular/common';
 import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { TableModule } from 'primeng/table';
 import { InputTextModule } from 'primeng/inputtext';
-import { AutoCompleteModule } from 'primeng/autocomplete';
 import { ButtonModule } from 'primeng/button';
 import { ToastModule } from 'primeng/toast';
-import { ApiService } from '../../core/api';
-import { AuthService } from '../../services/auth.service';
-import { SelectModule } from 'primeng/select';
 import { MessageService } from 'primeng/api';
 import { Dialog } from 'primeng/dialog';
 import { IftaLabel } from 'primeng/iftalabel';
@@ -22,10 +18,8 @@ import { FormsModule } from '@angular/forms';
     CommonModule,
     TableModule,
     InputTextModule,
-    AutoCompleteModule,
     ButtonModule,
     ToastModule,
-    SelectModule,
     Dialog,
     IftaLabel,
     DatePicker,
@@ -36,8 +30,6 @@ import { FormsModule } from '@angular/forms';
   styleUrl: './events.scss',
 })
 export class Events implements OnInit {
-  private api = inject(ApiService);
-  private authService = inject(AuthService);
   private messsageService = inject(MessageService);
   private eventData = inject(EventData);
   private router = inject(Router);
@@ -101,12 +93,11 @@ export class Events implements OnInit {
   }
 
   ngOnInit() {
-    this.eventData.fetchEvents();
+    this.reload();
   }
 
   // Opciones de filtros (adaptá a tus tablas/acciones reales)
   tableOptions = [
-    { label: 'Todos', value: null },
     { label: 'Elemento', value: 'element' },
     { label: 'Obrero', value: 'construction_worker' },
     { label: 'Obra', value: 'construction' },
@@ -115,7 +106,6 @@ export class Events implements OnInit {
     { label: 'Arquitecto', value: 'architect' },
   ];
   actionOptions = [
-    { label: 'Todos', value: null },
     { label: 'Creado', value: 'creado' },
     { label: 'Actualización', value: 'actualizado' },
     { label: 'Eliminación', value: 'eliminado' },
@@ -123,7 +113,6 @@ export class Events implements OnInit {
     { label: 'Asignación', value: 'asignado' },
   ];
   actorTypeOptions = [
-    { label: 'Todos', value: null },
     { label: 'Arquitecto', value: 'architect' },
     { label: 'Obrero', value: 'worker' },
   ];
@@ -133,6 +122,10 @@ export class Events implements OnInit {
 
     const from = this.dateFrom();
     const to = this.dateTo();
+    const tableFilter = this.filterTable();
+    const actionFilter = this.filterAction();
+    const actorFilter = this.filterActorType();
+    const search = this.searchText();
 
     if (from) {
       const f = this.startOfDay(from);
@@ -144,27 +137,31 @@ export class Events implements OnInit {
     }
 
     // Filtro por tabla
-    if (this.filterTable())
-      ev = ev.filter((e) => e.tableName === this.filterTable());
+    if (tableFilter)
+      ev = ev.filter(
+        (e) => (e.tableName ?? '').toLowerCase() === tableFilter,
+      );
 
     // Filtro por tipo de acción (match parcial en español)
-    if (this.filterAction())
+    if (actionFilter)
       ev = ev.filter((e) =>
-        e.action.toLowerCase().includes(this.filterAction()!)
+        (e.action ?? '').toLowerCase().includes(actionFilter),
       );
 
     // Filtro por tipo de usuario
-    if (this.filterActorType())
-      ev = ev.filter((e) => e.changedByType === this.filterActorType());
+    if (actorFilter)
+      ev = ev.filter(
+        (e) => (e.changedByType ?? '').toLowerCase() === actorFilter,
+      );
 
     // Búsqueda global
-    if (this.searchText()) {
-      const txt = this.searchText().toLowerCase();
+    if (search) {
+      const txt = search.toLowerCase();
       ev = ev.filter(
         (e) =>
-          e.action.toLowerCase().includes(txt) ||
-          e.tableName.toLowerCase().includes(txt) ||
-          e.recordId.toString().includes(txt) ||
+          (e.action ?? '').toLowerCase().includes(txt) ||
+          (e.tableName ?? '').toLowerCase().includes(txt) ||
+          (e.recordId ?? '').toString().includes(txt) ||
           (e.oldData &&
             JSON.stringify(e.oldData).toLowerCase().includes(txt)) ||
           (e.newData && JSON.stringify(e.newData).toLowerCase().includes(txt))
@@ -186,12 +183,14 @@ export class Events implements OnInit {
     const value = (event.target as HTMLSelectElement).value;
     this.filterActorType.set(value || null);
   }
-  fetchEvents() {
-    this.api.request<any[]>('GET', `events-history`).subscribe({
-      next: (res) => this.events.set(res),
-      error: () => {
-        // Podés agregar un toast si querés
-      },
+  reload() {
+    this.eventData.fetchEvents().subscribe({
+      error: () =>
+        this.messsageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo cargar el historial',
+        }),
     });
   }
   resetFilters() {
@@ -203,12 +202,15 @@ export class Events implements OnInit {
     this.dateTo.set(null);
   }
   openChangedByInfo(data: any) {
+    if (!data) {
+      this.changedByDialog.set(null);
+      return;
+    }
     const { password, ...safeData } = data;
     this.changedByDialog.set(safeData);
   }
 
   closeChangedByDialog() {
-    console.log('a');
     this.changedByDialog.set(null);
   }
 

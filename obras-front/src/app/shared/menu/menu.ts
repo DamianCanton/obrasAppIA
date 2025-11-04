@@ -67,13 +67,19 @@ export class MenuComponent implements OnInit, OnDestroy {
       { label: 'Depósito', icon: 'pi pi-box', routerLink: ['deposit'] },
       { label: 'Historial', icon: 'pi pi-calendar', routerLink: ['events'] },
       { label: 'Notas', icon: 'pi pi-book', routerLink: ['notes'] },
+      ...(this.isAdminUser()
+        ? [
+            {
+              label: 'Guía del panel',
+              icon: 'pi pi-info-circle',
+              routerLink: ['admin-guide'],
+            } as MenuItem,
+          ]
+        : []),
       {
         label: 'Salir',
         icon: 'pi pi-sign-out',
-        command: () => {
-          this.authService.logout();
-          this.router.navigate(['/login']);
-        },
+        command: () => this.confirmLogout(),
       },
     ];
 
@@ -105,5 +111,20 @@ export class MenuComponent implements OnInit, OnDestroy {
     this.items = withActive(
       withCloseCommand(rawItems, () => this.drawer.closeSidebar())
     );
+  }
+
+  private isAdminUser() {
+    const email = this.authService.user()?.email?.toLowerCase();
+    return email === 'fede@ejemplo';
+  }
+
+  private confirmLogout() {
+    this.drawer.closeSidebar();
+    const confirmed = window.confirm(
+      '¿Seguro que querés salir de la aplicación?'
+    );
+    if (!confirmed) return;
+    this.authService.logout();
+    this.router.navigate(['/login']);
   }
 }

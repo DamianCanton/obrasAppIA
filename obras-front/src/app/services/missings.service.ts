@@ -2,6 +2,7 @@ import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { ApiService } from '../core/api';
 import { Observable, of } from 'rxjs';
 import { tap, map } from 'rxjs/operators';
+import { AuthService } from './auth.service';
 
 export type MissingStatus = 'pending' | 'done' | 'cancelled';
 
@@ -43,6 +44,7 @@ export interface UpdateMissingDto {
 @Injectable({ providedIn: 'root' })
 export class MissingsService {
   private api = inject(ApiService);
+  private auth = inject(AuthService);
   missings = signal<Missing[]>([]);
   loading = signal(false);
   lastQuery = signal<MissingQuery | null>(null);
@@ -134,8 +136,15 @@ export class MissingsService {
 
   // Acciones de arquitecto sobre estado
   setStatus(id: number, status: MissingStatus): Observable<Missing> {
+    const user = this.auth.user();
+    const role = this.auth.role()?.toUpperCase();
+
     return this.api
-      .request<Missing>('PATCH', `missings/${id}/status`, { status })
+      .request<Missing>('PATCH', `missings/${id}/status`, {
+        status,
+        actorId: user?.id,
+        actorRole: role,
+      })
       .pipe(
         tap((updated) =>
           this.missings.update((curr) =>

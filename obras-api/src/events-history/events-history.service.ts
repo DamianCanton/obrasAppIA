@@ -36,12 +36,31 @@ export class EventsHistoryService {
       .orderBy('event.createdAt', 'DESC')
       .getMany();
 
-    const result = (data as EventsHistoryWithUser[]).map((ev) => ({
-      ...ev,
-      changedByUser: ev.architectData ?? ev.workerData,
-      architectData: undefined,
-      workerData: undefined,
-    }));
+    const result = (data as EventsHistoryWithUser[]).map((ev) => {
+      const architect =
+        ev.architectData &&
+        ({
+          id: ev.architectData.id,
+          name: ev.architectData.name,
+          email: ev.architectData.email,
+          createdAt: ev.architectData.createdAt,
+        } as Architect);
+
+      const worker =
+        ev.workerData &&
+        ({
+          id: ev.workerData.id,
+          name: ev.workerData.name,
+          createdAt: ev.workerData.createdAt,
+        } as ConstructionWorker);
+
+      return {
+        ...ev,
+        changedByUser: architect ?? worker ?? null,
+        architectData: undefined,
+        workerData: undefined,
+      };
+    });
 
     return result;
   }

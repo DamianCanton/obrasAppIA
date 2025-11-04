@@ -8,16 +8,20 @@ import { DropdownModule } from 'primeng/dropdown';
 import { CheckboxModule } from 'primeng/checkbox';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
+import { ToastModule } from 'primeng/toast';
+import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-missing-registry',
   standalone: true,
-  imports: [CommonModule, FormsModule, TableModule, TagModule, ButtonModule, DropdownModule, CheckboxModule],
+  imports: [CommonModule, FormsModule, TableModule, TagModule, ButtonModule, DropdownModule, CheckboxModule, ToastModule],
   templateUrl: './missing-registry.html',
+  providers: [MessageService],
 })
 export class MissingRegistry implements OnInit {
   svc = inject(MissingsService);
   route = inject(ActivatedRoute);
+  private messageService = inject(MessageService);
 
   @Input() architectId!: number;      // pásalo desde layout/auth
   @Input() constructionId?: number;
@@ -29,7 +33,7 @@ export class MissingRegistry implements OnInit {
     { label: 'Cancelados', value: 'cancelled' as MissingStatus },
   ];
 
-  statusFilter: MissingStatus | null = null;
+  statusFilter: MissingStatus | null = 'pending';
   onlyUrgent = false;
 
   filtered = computed(() => {
@@ -62,7 +66,18 @@ export class MissingRegistry implements OnInit {
 
   refresh() { this.svc.refresh().subscribe(); }
 
-  markDone(id: number) { this.svc.markDone(id).subscribe(); }
+  markDone(id: number) {
+    this.svc.markDone(id).subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Faltante resuelto',
+          detail: 'El material volvió al inventario.',
+        });
+        this.refresh();
+      },
+    });
+  }
   cancel(id: number) { this.svc.cancel(id).subscribe(); }
   reopen(id: number) { this.svc.reopen(id).subscribe(); }
 }

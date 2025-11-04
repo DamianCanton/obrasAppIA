@@ -1,0 +1,41 @@
+.guide {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  padding: 1rem;
+
+  &__header {
+    max-width: 48rem;
+    h1 {
+      margin-bottom: 0.5rem;
+    }
+    p {
+      color: var(--p-text-muted-color, #4b5563);
+      line-height: 1.6;
+    }
+  }
+
+  &__cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.5rem;
+  }
+
+  ::ng-deep .p-card {
+    height: 100%;
+  }
+
+  ul {
+    margin: 0;
+    padding-left: 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .guide {
+    padding: 0.5rem;
+  }
+}

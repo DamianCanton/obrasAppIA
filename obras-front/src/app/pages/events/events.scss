@@ -1,0 +1,25 @@
+::ng-deep .events-table {
+  width: 100%;
+}
+
+::ng-deep .events-table .p-datatable-tbody > tr > td {
+  word-break: break-word;
+}
+
+.filters-row .p-inputtext {
+  min-width: 12rem;
+}
+
+@media (max-width: 768px) {
+  .filters-row {
+    width: 100%;
+  }
+
+  .filters-row .p-inputtext {
+    width: 100%;
+  }
+
+  ::ng-deep .events-table .p-datatable-tbody > tr > td {
+    align-items: flex-start;
+  }
+}

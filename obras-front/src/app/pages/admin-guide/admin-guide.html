@@ -1,0 +1,19 @@
+<section class="guide">
+  <div class="guide__header">
+    <h1>Guía rápida del panel</h1>
+    <p>
+      Esta sección resume, en palabras simples, qué podés hacer en cada pestaña.
+      Pensada para que el equipo administrativo (por ejemplo, fede&#64;ejemplo) tenga
+      claro cómo moverse y qué controlar.
+    </p>
+  </div>
+
+  <div class="guide__cards">
+    <p-card *ngFor="let section of sections" class="guide__card" header="{{ section.title }}">
+      <p class="mb-3">{{ section.description }}</p>
+      <ul>
+        <li *ngFor="let bullet of section.bullets">{{ bullet }}</li>
+      </ul>
+    </p-card>
+  </div>
+</section>

@@ -28,5 +28,15 @@ export const AuthGuard: CanActivateFn = (route: ActivatedRouteSnapshot) => {
     return false;
   }
 
+  const allowedEmails = route.data?.['adminEmails'] as string[] | undefined;
+  if (allowedEmails && allowedEmails.length > 0) {
+    const userEmail = auth.user()?.email?.toLowerCase() ?? null;
+    const normalized = allowedEmails.map((e) => e.toLowerCase());
+    if (!userEmail || !normalized.includes(userEmail)) {
+      router.navigate([roleHome(currentRole ?? null)]);
+      return false;
+    }
+  }
+
   return true;
 };

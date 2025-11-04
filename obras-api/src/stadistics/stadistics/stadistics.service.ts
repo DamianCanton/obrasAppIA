@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Brackets, Repository } from 'typeorm';
 
 import { Construction } from 'src/shared/entities/construction.entity';
 import { ConstructionWorker } from 'src/shared/entities/construction-worker.entity';
@@ -53,10 +53,29 @@ export class StadisticsService {
       .innerJoin('el.architect', 'arch')
       .where('arch.id = :architectId', { architectId })
       .andWhere('ev."tableName" = :tbl', { tbl: 'element' })
-      .andWhere('ev."action" IN (:...actions)', { actions: ['move', 'movido'] })
+      .andWhere(
+        new Brackets((qb) => {
+          qb.where('ev."action" = :rawMove', { rawMove: 'move' })
+            .orWhere('ev."action" ILIKE :moveLabel', {
+              moveLabel: 'Elemento movido%',
+            });
+        }),
+      )
       .orderBy('ev."createdAt"', 'DESC')
       .limit(5)
       .getMany();
+
+    const normalize = (value: any) => {
+      if (!value) return null;
+      if (typeof value === 'string') {
+        try {
+          return JSON.parse(value);
+        } catch {
+          return value;
+        }
+      }
+      return value;
+    };
 
     return {
       counts: {
@@ -74,8 +93,8 @@ export class StadisticsService {
         // Soporta ambos nombres según tu logger
         actorId: e.changedBy ?? e.actorId ?? null,
         actorType: e.changedByType ?? e.actorType ?? null,
-        from: e.oldData ?? null,
-        to: e.newData ?? null,
+        from: normalize(e.oldData),
+        to: normalize(e.newData),
         action: e.action,
       })),
     };

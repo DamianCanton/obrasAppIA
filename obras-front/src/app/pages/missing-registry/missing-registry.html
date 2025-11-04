@@ -28,6 +28,12 @@
     </div>
   </div>
 
+  <p class="text-sm text-600">
+    Los faltantes permanecen abiertos hasta que un administrador los marque como
+    “Listo”. Si la herramienta se perdió, mantené el registro pendiente para que
+    quede asociado al obrero responsable.
+  </p>
+
   <p-table
     [value]="filtered()"
     [paginator]="true"
@@ -97,3 +103,5 @@
     </ng-template>
   </p-table>
 </div>
+
+<p-toast></p-toast>

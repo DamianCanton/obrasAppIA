@@ -19,6 +19,7 @@ import { AuthService } from '../../services/auth.service';
 import { IftaLabel } from 'primeng/iftalabel';
 import { Router } from '@angular/router';
 import { ElementsService } from '../../services/elements.service';
+import { TooltipModule } from 'primeng/tooltip';
 
 @Component({
   selector: 'app-elements-table',
@@ -34,6 +35,7 @@ import { ElementsService } from '../../services/elements.service';
     ToastModule,
     DialogModule,
     IftaLabel,
+    TooltipModule,
   ],
   templateUrl: './elements-table.component.html',
   styleUrl: './elements-table.component.scss',
@@ -81,6 +83,7 @@ export class ElementsTableComponent {
     provider: ['', Validators.required],
     buyDate: ['', Validators.required],
     categoryId: [null, Validators.required],
+    locationKey: [null, Validators.required],
     locationId: [null, Validators.required],
     locationType: ['', Validators.required],
   });
@@ -135,8 +138,10 @@ export class ElementsTableComponent {
     this.form.reset();
     if (this.locations().length > 0) {
       const first = this.locations()[0];
-      this.form.get('locationId')?.setValue(first.id);
-      this.form.get('locationType')?.setValue(first.type);
+      this.form.patchValue({ locationKey: first.key });
+      this.applyLocationFromKey(first.key);
+    } else {
+      this.applyLocationFromKey(null);
     }
     this.displayDialog.set(true);
     this.isNew.set(true);
@@ -148,15 +153,19 @@ export class ElementsTableComponent {
    * @param element Elemento a editar; sus campos se precargan en el formulario.
    */
   openEditDialog(element: Element) {
+    const key = this.buildLocationKey(
+      element.currentLocationType ?? element.location?.locationType ?? null,
+      element.currentLocationId ?? element.location?.locationId ?? null,
+    );
     this.form.patchValue({
       name: element.name,
       brand: element.brand,
       provider: element.provider,
       buyDate: element.buyDate?.substring(0, 10),
-      categoryId: (element as any).category?.id ?? null,
-      locationId: (element as any).location?.locationId ?? null,
-      locationType: (element as any).location?.locationType ?? '',
+      categoryId: element.category?.id ?? null,
+      locationKey: key,
     });
+    this.applyLocationFromKey(key);
     this.displayDialog.set(true);
     this.isNew.set(false);
     this.selectedElementId = element.id;
@@ -187,6 +196,12 @@ export class ElementsTableComponent {
     if (data.buyDate instanceof Date) {
       data.buyDate = data.buyDate.toISOString().substring(0, 10);
     }
+
+    data.currentLocationType = data.locationType ?? null;
+    data.currentLocationId = data.locationId ?? null;
+    delete data.locationKey;
+    delete data.locationType;
+    delete data.locationId;
 
     const afterSuccess = (summary: string) => {
       this.displayDialog.set(false);
@@ -271,18 +286,22 @@ export class ElementsTableComponent {
     // Filtro por categoría
     const cat = this.selectedCategoryId();
     if (cat && cat !== 0) {
-      list = list.filter((el: any) => el.category?.id === cat);
+      list = list.filter((el) => el.category?.id === cat);
     }
 
     // Filtro por ubicación
     const locKey = this.selectedLocationKey();
     if (locKey && locKey !== 'all') {
-      const [type, idStr] = locKey.split(':');
-      const id = Number(idStr);
-      list = list.filter(
-        (el: any) =>
-          el.location?.locationType === type && el.location?.locationId === id
-      );
+      const parsed = this.parseLocationKey(locKey);
+      if (parsed) {
+        list = list.filter((el) => {
+          const type =
+            el.currentLocationType ?? el.location?.locationType ?? null;
+          const id =
+            el.currentLocationId ?? el.location?.locationId ?? null;
+          return type === parsed.type && id === parsed.id;
+        });
+      }
     }
 
     return list;
@@ -314,16 +333,13 @@ export class ElementsTableComponent {
    */
   onLocationChange(ev: Event) {
     const value = (ev.target as HTMLSelectElement).value;
-    this.selectedLocationKey.set(value);
+    this.selectedLocationKey.set(value || 'all');
   }
 
   onFormLocationSelect(ev: Event) {
-    const id = Number((ev.target as HTMLSelectElement).value);
-    const opt = this.locations().find((l) => l.id === id);
-    this.form.patchValue({
-      locationId: id,
-      locationType: opt?.type ?? '',
-    });
+    const key = (ev.target as HTMLSelectElement).value || null;
+    this.form.patchValue({ locationKey: key });
+    this.applyLocationFromKey(key);
   }
 
   /**
@@ -332,10 +348,14 @@ export class ElementsTableComponent {
    * @param type Tipo de ubicación (`deposit` | `construction`).
    * @returns Nombre legible o `'-'` si no se encuentra.
    */
-  getLocationName(id?: number, type?: string): string {
-    if (!id || !type) return '-';
-    const found = this.locations().find((l) => l.id === id && l.type === type);
-    return found ? found.name : '-';
+  getLocationName(id?: number | null, type?: string | null): string {
+    if (!type || id == null) return '-';
+    const key = this.buildLocationKey(type, id);
+    const found = key
+      ? this.locations().find((l) => l.key === key)
+      : undefined;
+    if (found) return found.name;
+    return type === 'deposit' ? `Depósito #${id}` : `Obra #${id}`;
   }
 
   /**
@@ -343,9 +363,8 @@ export class ElementsTableComponent {
    * @param noteId ID de la nota a editar.
    */
   editNote(noteId: number) {
-    console.log('note-editor', noteId);
     this.router.navigate(['note-editor', noteId], {
-      queryParams: { from: this.router.url },
+      queryParams: { returnUrl: this.router.url },
     });
   }
 
@@ -355,7 +374,34 @@ export class ElementsTableComponent {
    */
   createNoteForElement(elementId: number) {
     this.router.navigate(['note-editor', 'new'], {
-      queryParams: { from: this.router.url, elementId },
+      queryParams: { returnUrl: this.router.url, elementId },
     });
+  }
+
+  private parseLocationKey(key: string | null) {
+    if (!key) return null;
+    const [type, idStr] = key.split(':');
+    const id = Number(idStr);
+    if (!type || Number.isNaN(id)) return null;
+    return { type: type as 'deposit' | 'construction', id };
+  }
+
+  private applyLocationFromKey(key: string | null) {
+    const parsed = this.parseLocationKey(key);
+    this.form.patchValue(
+      {
+        locationId: parsed?.id ?? null,
+        locationType: parsed?.type ?? '',
+      },
+      { emitEvent: false },
+    );
+  }
+
+  private buildLocationKey(
+    type?: string | null,
+    id?: number | null,
+  ): string | null {
+    if (!type || id == null) return null;
+    return `${type}:${id}`;
   }
 }

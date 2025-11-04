@@ -1,6 +1,6 @@
 👉 Implementar funcionalidad por funcionalidad, usando este orden:
 
-🔐 auth/: login
+✅ 🔐 auth/: login
 
 👷‍♂️ architect/: alta
 
@@ -11,25 +11,25 @@
  falta movimiento de elements listo
 
 --> logger listo, falta asegurarse que funciona en todos lados.
---> 🕓 events-history/: registro de acciones
+✅ --> 🕓 events-history/: registro de acciones
 
 --> 📸 construction-snapshot/: cierre de obra 
 
-❗ missing/ + 📝 note/: gestión y eliminación
+✅ ❗ missing/ + 📝 note/: gestión y eliminación
 
 ################################
 
-Me falta hacer rutas para ver historial! (un simple LIST bastaria)
+✅ Me falta hacer rutas para ver historial! (listo)
 
 Falta crear pantallas: 
 Acomodar scroll de tabla materiales.
 Posibilidad de crear depositos y administrarlos en la pantalla de   depositos. 
-Historial de eventos funcional,
-Almacen de notas. 
+✅ Historial de eventos funcional,
+✅ Almacen de notas. 
 
 
 FALTAN 28/07
-Actualizar y crear notas (actualmente solo logea)
+✅ Actualizar y crear notas (actualmente solo logea)
 Asegurarse que todos los eventos sean registrados.
 Revisar dise;o general.
 Posibilidad de crear depositos y administrarlos en la pantalla de depositos. 
@@ -37,8 +37,8 @@ Posibilidad de crear depositos y administrarlos en la pantalla de depositos.
 
 
 21/08: 
-Falta revisar el funcionamiento y guardado de notas. 
-El historial tira un error. 
+✅ Falta revisar el funcionamiento y guardado de notas. 
+✅ El historial tira un error. 
 Asegurarse que todos los eventos sean registrados en backend. 
 Asegurarse que todos los eventos sean registrados.
 
@@ -47,7 +47,7 @@ Pantalla de administrar faltantes (y no se estan viendo actualmente)
 Armar pantallas para obreros 
 
 31/08
-Listo menu faltantes y ya aparecen en el registro, falta revisar todas las funcionalidades que puede hacer arquitecto (cambiar stutus y no se si otra mas.)
+✅ Listo menu faltantes y ya aparecen en el registro, falta revisar todas las funcionalidades que puede hacer arquitecto (cambiar status y no se si otra mas.)
 Armar pantallas para obreros 
 
 01/08

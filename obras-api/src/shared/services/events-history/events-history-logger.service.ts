@@ -13,7 +13,8 @@ interface LogEventOptions {
     | 'move'
     | 'assign'
     | 'close'
-    | 'restore';
+    | 'restore'
+    | 'login';
   actorId: number;
   actorType: 'architect' | 'worker' | 'admin';
   oldData?: any;
@@ -41,6 +42,7 @@ export class EventsHistoryLoggerService {
         update: 'Obrero actualizado',
         delete: 'Obrero eliminado',
         assign: 'Obrero asignado a obra',
+        login: 'Obrero inició sesión',
       },
       construction: {
         create: 'Construcción creada',
@@ -87,6 +89,15 @@ export class EventsHistoryLoggerService {
     return description;
   }
 
+  private toPlain(data: any) {
+    if (data === null || data === undefined) return null;
+    try {
+      return JSON.parse(JSON.stringify(data));
+    } catch {
+      return data;
+    }
+  }
+
   async logEvent({
     table,
     recordId,
@@ -102,8 +113,8 @@ export class EventsHistoryLoggerService {
       tableName: table,
       recordId: recordId,
       action: action_message,
-      oldData: oldData ? JSON.stringify(oldData) : null,
-      newData: newData ? JSON.stringify(newData) : null,
+      oldData: this.toPlain(oldData),
+      newData: this.toPlain(newData),
       changedBy: actorId,
       changedByType: actorType,
     });
