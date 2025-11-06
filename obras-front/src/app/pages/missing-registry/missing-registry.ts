@@ -1,6 +1,7 @@
-import { Component, OnInit, computed, inject, Input, signal } from '@angular/core';
+﻿import { Component, OnInit, computed, inject, Input, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MissingsService, MissingStatus } from '../../services/missings.service';
+import { MissingsService } from '../../services/missings.service';
+import { MissingStatus } from '../../models/interfaces.model';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ButtonModule } from 'primeng/button';
@@ -23,17 +24,21 @@ export class MissingRegistry implements OnInit {
   route = inject(ActivatedRoute);
   private messageService = inject(MessageService);
 
-  @Input() architectId!: number;      // pásalo desde layout/auth
+  @Input() architectId!: number;      // pÃ¡salo desde layout/auth
   @Input() constructionId?: number;
 
-  statusOptions = [
+  statusOptions: { label: string; value: MissingStatus | null }[] = [
     { label: 'Todos', value: null },
-    { label: 'En espera', value: 'pending' as MissingStatus },
-    { label: 'Listos', value: 'done' as MissingStatus },
-    { label: 'Cancelados', value: 'cancelled' as MissingStatus },
+    { label: 'Se quedo sin', value: 'SE_QUEDO_SIN' as MissingStatus },
+    { label: 'Se rompio', value: 'SE_ROMPIO' as MissingStatus },
+    { label: 'Se perdio', value: 'SE_PERDIO' as MissingStatus },
   ];
+  statusChangeOptions = this.statusOptions.filter(
+    (option): option is { label: string; value: MissingStatus } =>
+      option.value !== null,
+  );
 
-  statusFilter: MissingStatus | null = 'pending';
+  statusFilter: MissingStatus | null = null;
   onlyUrgent = false;
 
   filtered = computed(() => {
@@ -44,40 +49,54 @@ export class MissingRegistry implements OnInit {
     return list.slice().sort((a, b) => {
       const u = Number(b.urgent) - Number(a.urgent);
       if (u !== 0) return u;
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      return new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime();
     });
   });
 
   ngOnInit(): void {
-    // inicializa si no hay datos (útil cuando se entra directo por URL)
+    // inicializa si no hay datos (Ãºtil cuando se entra directo por URL)
     if (!this.svc.lastQuery() && this.architectId) {
       this.svc.initForArchitect(this.architectId, this.constructionId).subscribe();
     }
     // si viene ?tab=pending del drawer
-    const tab = this.route.snapshot.queryParamMap.get('tab');
-    if (tab === 'pending') this.statusFilter = 'pending';
+    const tab = this.route.snapshot.queryParamMap.get('tab') as MissingStatus | null;
+    if (tab && ['SE_QUEDO_SIN', 'SE_ROMPIO', 'SE_PERDIO'].includes(tab)) {
+      this.statusFilter = tab;
+    }
   }
 
   statusLabel(s: MissingStatus) {
-    return s === 'pending' ? 'En espera' : s === 'done' ? 'Listo' : 'Cancelado';
+    switch (s) {
+      case 'SE_QUEDO_SIN':
+        return 'Se quedo sin';
+      case 'SE_ROMPIO':
+        return 'Se rompio';
+      case 'SE_PERDIO':
+        return 'Se perdio';
+      default:
+        return 'Desconocido';
+    }
   }
 
-  applyFilter() { /* la signal computed se recalcula sola */ }
+  applyFilter() {
+    /* la signal computed se recalcula sola */
+  }
 
-  refresh() { this.svc.refresh().subscribe(); }
+  refresh() {
+    this.svc.refresh().subscribe();
+  }
 
-  markDone(id: number) {
-    this.svc.markDone(id).subscribe({
+  changeStatus(id: number, status: MissingStatus) {
+    this.svc.setStatus(id, status).subscribe({
       next: () => {
         this.messageService.add({
           severity: 'success',
-          summary: 'Faltante resuelto',
-          detail: 'El material volvió al inventario.',
+          summary: 'Estado actualizado',
+          detail: 'Se marco el faltante como ' + this.statusLabel(status) + '.',
         });
         this.refresh();
       },
     });
   }
-  cancel(id: number) { this.svc.cancel(id).subscribe(); }
-  reopen(id: number) { this.svc.reopen(id).subscribe(); }
 }
+

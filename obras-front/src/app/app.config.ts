@@ -6,10 +6,12 @@ import { provideAnimationsAsync } from '@angular/platform-browser/animations/asy
 import { providePrimeNG } from 'primeng/config';
 import {
   provideHttpClient,
+  withInterceptors,
   withInterceptorsFromDi,
 } from '@angular/common/http';
 import Preset from './preset';
 import { MissingsBootstrapService } from './core/missings-bootstrap.service';
+import { authInterceptor } from './core/auth.interceptor';
 
 function startMissingsOnBoot() {
   return () => {
@@ -28,7 +30,10 @@ export const appConfig: ApplicationConfig = {
         options: { darkModeSelector: '.dark', prefix: 'p' },
       },
     }),
-    provideHttpClient(withInterceptorsFromDi()),
+    provideHttpClient(
+      withInterceptors([authInterceptor]),
+      withInterceptorsFromDi(),
+    ),
     { provide: APP_INITIALIZER, multi: true, useFactory: startMissingsOnBoot },
   ],
 };

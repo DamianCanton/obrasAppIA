@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, inject, signal } from '@angular/core';
+import { Component, Input, OnInit, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
@@ -22,6 +22,12 @@ export class MissingMenu implements OnInit {
   @Input() constructionId?: number; // opcional para filtrar por obra
 
   visible = false;
+  missings = this.svc.missings;
+  totalCount = computed(() => this.missings().length);
+  urgentCount = computed(() => this.missings().filter((m) => m.urgent).length);
+  urgentMissings = computed(() =>
+    this.missings().filter((m) => m.urgent),
+  );
 
   ngOnInit(): void {
     if (this.architectId) {

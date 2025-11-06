@@ -16,6 +16,10 @@ import { AdminGuide } from './pages/admin-guide/admin-guide';
 
 import { ArchitectLayout } from './layouts/architect-layout';
 import { WorkerLayout } from './layouts/worker-layout';
+import { WorkerElementsComponent } from './pages/worker-elements/worker-elements';
+import { WorkerInventoryComponent } from './pages/worker-inventory/worker-inventory';
+import { WorkerMissingsComponent } from './pages/worker-missings/worker-missings';
+import { WorkerNotesComponent } from './pages/worker-notes/worker-notes';
 
 export const routes: Routes = [
   // Login sin layout
@@ -26,7 +30,7 @@ export const routes: Routes = [
     path: '',
     component: ArchitectLayout,
     canActivate: [AuthGuard],
-    data: { roles: ['architect'] },
+    data: { roles: ['ADMIN'] },
     children: [
       { path: '', component: Dashboard },
       { path: 'construction-workers', component: ConstructionWorkers },
@@ -52,11 +56,12 @@ export const routes: Routes = [
     path: 'worker',
     component: WorkerLayout,
     canActivate: [AuthGuard],
-    data: { roles: ['worker'] },
+    data: { roles: ['WORKER'] },
     children: [
-      { path: 'elements', component: Deposit },
-      { path: 'missings', component: MissingRegistry },
-      { path: 'notas', component: Notes },
+      { path: 'elements', component: WorkerElementsComponent },
+      { path: 'inventory', component: WorkerInventoryComponent },
+      { path: 'missings', component: WorkerMissingsComponent },
+      { path: 'notes', component: WorkerNotesComponent },
       { path: '', pathMatch: 'full', redirectTo: 'elements' },
     ],
   },

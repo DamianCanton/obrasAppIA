@@ -16,12 +16,11 @@ export class MissingsBootstrapService {
   /** Arranque reactivo al login de arquitecto */
   autoStart(pollMs: number) {
     effect((onCleanup) => {
-      const roleRaw = this.auth.role();
-      const role = (roleRaw ?? '').toLowerCase();
+      const role = this.auth.role();
       const user = this.auth.user();
 
-      // Si desloguea o no es arquitecto, cortar polling anterior
-      if (role !== 'architect' || !user) {
+      // Si desloguea o no es admin/arquitecto, cortar polling anterior
+      if (role !== 'ADMIN' || !user) {
         this.startedForId = null;
         return;
       }

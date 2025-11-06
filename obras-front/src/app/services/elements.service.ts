@@ -8,7 +8,7 @@ export type CategoryOpt = { id: number; name: string };
 export type LocationOpt = {
   key: string;
   id: number;
-  type: 'deposit' | 'construction';
+  type: 'deposit' | 'construction' | 'worker';
   name: string;
 };
 
@@ -18,7 +18,7 @@ export class ElementsService {
   private deposits = signal<Array<{ id: number; name: string }>>([]);
   private constructions = signal<Array<{ id: number; title: string }>>([]);
 
-  // 🔹 Categorías únicas derivadas
+  // Categorias unicas derivadas
   categories = computed<CategoryOpt[]>(() => {
     const map = new Map<number, CategoryOpt>();
     for (const el of this.elements()) {
@@ -28,7 +28,7 @@ export class ElementsService {
     return Array.from(map.values());
   });
 
-  // 🔹 Ubicaciones disponibles (depósitos + obras)
+  // Ubicaciones disponibles (depositos, obras y obreros)
   locations = computed<LocationOpt[]>(() => {
     const opts: LocationOpt[] = [];
 
@@ -37,7 +37,7 @@ export class ElementsService {
         key: `deposit:${dep.id}`,
         id: dep.id,
         type: 'deposit',
-        name: dep.name || `Depósito #${dep.id}`,
+        name: dep.name || `Deposito #${dep.id}`,
       });
     }
 
@@ -50,12 +50,32 @@ export class ElementsService {
       });
     }
 
+    const workers = new Map<number, string>();
+    for (const el of this.elements()) {
+      const assignments = (el as any)?.assignments ?? [];
+      const active = assignments.find((a: any) => a && !a.returnedAt && a.worker);
+      if (active?.worker?.id) {
+        const workerId = active.worker.id;
+        const workerName = active.worker.name || `Obrero #${workerId}`;
+        workers.set(workerId, workerName);
+      }
+    }
+
+    for (const [id, name] of workers.entries()) {
+      opts.push({
+        key: `worker:${id}`,
+        id,
+        type: 'worker',
+        name,
+      });
+    }
+
     return opts;
   });
 
   private _loaded = signal(false);
   private _loading = signal(false);
-  private inflight$?: Observable<Element[]>; // <- cache de la request en curso
+  private inflight$?: Observable<Element[]>;
 
   constructor(private api: ApiService) {}
 
@@ -64,6 +84,11 @@ export class ElementsService {
       raw?.currentLocationType ?? raw?.location?.locationType ?? null;
     const currentLocationId =
       raw?.currentLocationId ?? raw?.location?.locationId ?? null;
+
+    const assignments = Array.isArray(raw?.assignments)
+      ? raw.assignments
+      : [];
+    const notes = Array.isArray(raw?.notes) ? raw.notes : [];
 
     return {
       ...raw,
@@ -76,6 +101,8 @@ export class ElementsService {
               locationId: currentLocationId,
             }
           : null,
+      assignments,
+      notes,
     };
   }
 
@@ -120,17 +147,14 @@ export class ElementsService {
     return this.inflight$;
   }
 
-  /** Garantiza datos: usa init() */
   ensureLoaded(architectId: number): Observable<Element[]> {
     return this.init(architectId);
   }
 
-  /** Fuerza refresh desde backend (por si hiciste CRUD) */
   refresh(architectId: number): Observable<Element[]> {
     return this.loadAll(architectId).pipe(shareReplay(1));
   }
 
-  /** Helpers si los necesitás */
   get loaded() {
     return this._loaded();
   }
@@ -138,17 +162,11 @@ export class ElementsService {
     return this._loading();
   }
 
-  /** CRUD con actualización local simple */
   create(architectId: number, dto: any): Observable<void> {
     const payload = this.toPayload(dto);
     return this.api
       .request<void>('POST', `architect/${architectId}/element`, payload)
-      .pipe(
-        tap(() => {
-          // tras crear, refrescamos para mantener consistencia
-          this.loadAll(architectId).subscribe();
-        }),
-      );
+      .pipe(tap(() => this.loadAll(architectId).subscribe()));
   }
 
   update(architectId: number, elementId: number, dto: any): Observable<void> {
@@ -159,11 +177,7 @@ export class ElementsService {
         `architect/${architectId}/element/${elementId}`,
         payload,
       )
-      .pipe(
-        tap(() => {
-          this.loadAll(architectId).subscribe();
-        }),
-      );
+      .pipe(tap(() => this.loadAll(architectId).subscribe()));
   }
 
   delete(architectId: number, elementId: number): Observable<void> {
@@ -172,7 +186,7 @@ export class ElementsService {
       .pipe(
         tap(() => {
           this.elements.set(this.elements().filter((e) => e.id !== elementId));
-        })
+        }),
       );
   }
 
@@ -199,3 +213,4 @@ export class ElementsService {
     };
   }
 }
+

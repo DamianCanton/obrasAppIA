@@ -1,0 +1,28 @@
+:host ::ng-deep .filters .p-dropdown {
+  min-width: 12rem;
+}
+
+:host ::ng-deep .actions-column {
+  width: 11rem;
+  text-align: right;
+}
+
+@media (max-width: 768px) {
+  :host ::ng-deep .filters {
+    flex-direction: column;
+  }
+
+  :host ::ng-deep .filters .p-dropdown {
+    width: 100%;
+  }
+}
+
+@media (max-width: 576px) {
+  :host ::ng-deep .hide-xs {
+    display: none !important;
+  }
+
+  :host ::ng-deep .actions-column {
+    width: 100%;
+  }
+}

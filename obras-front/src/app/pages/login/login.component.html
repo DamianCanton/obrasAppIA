@@ -1,30 +1,36 @@
-<div class="flex justify-content-center align-items-center h-screen">
-  <div class="w-23rem">
-    <form
-      [formGroup]="form"
-      (ngSubmit)="submit()"
-      class="p-2 flex flex-column gap-4"
-    >
-      <h2 class="text-center">Iniciar Sesión</h2>
+<div class="flex justify-content-center align-items-center min-h-screen surface-ground px-3">
+  <p-toast></p-toast>
+
+  <div class="w-full sm:w-24rem surface-card shadow-4 border-round-xl p-4 flex flex-column gap-4">
+    <div class="text-center">
+      <h2 class="text-2xl font-semibold text-900 mb-2">Iniciar Sesion</h2>
+      <p class="text-sm text-600">Accede con tu correo y contraseña</p>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-column gap-4">
       <div class="flex flex-column gap-2">
-        <label for="emailOrName">Email o Usuario</label>
+        <label for="email" class="text-sm font-medium text-700">Correo</label>
         <input
-          id="emailOrName"
-          type="text"
+          id="email"
+          type="email"
           pInputText
-          formControlName="emailOrName"
+          formControlName="email"
           autocomplete="username"
+          class="w-full"
+          placeholder="usuario@ejemplo.com"
         />
       </div>
 
       <div class="flex flex-column gap-2">
-        <label for="password">Contraseña</label>
+        <label for="password" class="text-sm font-medium text-700">Contraseña</label>
         <input
           id="password"
           type="password"
           pInputText
           formControlName="password"
           autocomplete="current-password"
+          class="w-full"
+          placeholder="Ingresa tu contraseña"
         />
       </div>
 
@@ -32,10 +38,10 @@
         pButton
         type="submit"
         label="Ingresar"
-        [disabled]="form.invalid"
-        class="p-button-primary w-full"
+        class="w-full"
+        [disabled]="form.invalid || submitting()"
+        [loading]="submitting()"
       ></button>
     </form>
-    <p-toast></p-toast>
   </div>
 </div>

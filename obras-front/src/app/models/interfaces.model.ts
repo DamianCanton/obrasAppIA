@@ -43,8 +43,11 @@ export interface Construction {
 export interface ConstructionWorker {
   id: number;
   name: string;
+  email: string;
   architect: Architect;
   elements: Element[];
+  assignments?: WorkerElementAssignment[];
+  notes?: Note[];
   created_at?: string;
 }
 
@@ -66,12 +69,22 @@ export interface Element {
   quantity?: number;
   buyDate: string;
   category: Category;
-  currentLocationType?: 'deposit' | 'construction' | null;
+  currentLocationType?: 'deposit' | 'construction' | 'worker' | null;
   currentLocationId?: number | null;
   location?: Location | null;
   architect: number | Architect;
-  note?: Note | null;
+  notes?: Note[];
+  assignments?: WorkerElementAssignment[];
   createdAt?: string;
+}
+
+export interface WorkerElementAssignment {
+  id: number;
+  assignedAt: string;
+  returnedAt: string | null;
+  worker: ConstructionWorker;
+  fromLocationType?: 'deposit' | 'construction' | 'worker' | null;
+  fromLocationId?: number | null;
 }
 
 export interface ElementLocation {
@@ -115,16 +128,28 @@ export interface Note {
   createdBy: number;
   createdByType: string;
   createdAt: string;
-  element?: any;
+  context?: string | null;
+  element?: Element | null;
+  missing?: Missing | null;
+  worker?: ConstructionWorker | null;
+  architect?: Architect | null;
 }
+
+export type MissingStatus = 'SE_QUEDO_SIN' | 'SE_ROMPIO' | 'SE_PERDIO';
 
 export interface Missing {
   id: number;
-  description: string;
-  element: Element | null;
+  title: string;
+  text: string;
+  status: MissingStatus;
+  urgent: boolean;
+  element: Element;
   construction: Construction | null;
   architect: Architect;
-  created_at?: string;
+  constructionWorker: ConstructionWorker;
+  notes?: Note[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface ConstructionSnapshot {

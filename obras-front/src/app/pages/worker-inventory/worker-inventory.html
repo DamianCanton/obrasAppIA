@@ -1,0 +1,81 @@
+<p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
+
+<div class="flex flex-column gap-4">
+  <div class="surface-card shadow-2 border-round-2xl p-4 lg:p-5 flex flex-column sm:flex-row sm:align-items-center sm:justify-content-between gap-3">
+    <div class="flex flex-column gap-2">
+      <h2 class="text-2xl font-semibold text-900 m-0">Mi inventario</h2>
+      <p class="text-sm text-600 m-0">
+        Estos son los elementos que tomaste del deposito. Devolve los que ya no utilices para que otros companeros puedan usarlos.
+      </p>
+    </div>
+
+    <button
+      pButton
+      type="button"
+      icon="pi pi-refresh"
+      label="Actualizar"
+      severity="secondary"
+      class="w-full sm:w-auto"
+      (click)="refresh()"
+      [loading]="loading()"
+    ></button>
+  </div>
+
+  <div class="surface-card shadow-2 border-round-2xl overflow-hidden">
+    <p-table
+      [value]="entries()"
+      dataKey="id"
+      [loading]="loading()"
+      responsiveLayout="scroll"
+      styleClass="w-full"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Elemento</th>
+          <th class="hide-xs">Asignado</th>
+          <th>Estado</th>
+          <th class="actions-column">Acciones</th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-entry>
+        <tr>
+          <td>
+            <div class="flex flex-column gap-1">
+              <span class="font-medium text-900">{{ entry.element.name }}</span>
+              <small class="text-600 text-sm truncate" [title]="entry.element.brand" *ngIf="entry.element.brand">
+                {{ entry.element.brand }}
+              </small>
+            </div>
+          </td>
+          <td class="hide-xs">{{ entry.assignedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+          <td>
+            <p-tag severity="warn" value="En uso" />
+          </td>
+          <td class="actions-column">
+            <button
+              pButton
+              type="button"
+              icon="pi pi-undo"
+              label="Devolver"
+              severity="success"
+              [loading]="returning() === entry.element.id"
+              (click)="confirmReturn(entry)"
+              pTooltip="Devuelve el elemento al deposito"
+              tooltipPosition="top"
+            ></button>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="4" class="text-center py-5 text-600">
+            Todavia no agregaste elementos a tu inventario.
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>

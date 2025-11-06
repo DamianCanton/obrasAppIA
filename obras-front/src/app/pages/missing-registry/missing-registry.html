@@ -29,9 +29,8 @@
   </div>
 
   <p class="text-sm text-600">
-    Los faltantes permanecen abiertos hasta que un administrador los marque como
-    “Listo”. Si la herramienta se perdió, mantené el registro pendiente para que
-    quede asociado al obrero responsable.
+    Los faltantes registran la situacion real del elemento (se quedo sin, se rompio o se perdio).
+    Actualiza el estado para mantener la trazabilidad con cada obrero y elemento asignado.
   </p>
 
   <p-table
@@ -67,36 +66,27 @@
         </td>
         <td>
           <p-tag
-            [severity]="m.status === 'pending' ? 'warning' : m.status === 'done' ? 'success' : 'secondary'"
+            [severity]="
+              m.status === 'SE_PERDIO'
+                ? 'danger'
+                : m.status === 'SE_ROMPIO'
+                  ? 'warning'
+                  : 'info'
+            "
             [value]="statusLabel(m.status)"
           />
         </td>
         <td>{{ m.createdAt | date: 'short' }}</td>
         <td>
-          <div class="flex gap-2">
-            <p-button
-              label="Listo"
-              size="small"
-              icon="pi pi-check"
-              [disabled]="m.status === 'done'"
-              (click)="markDone(m.id)"
-            />
-            <p-button
-              label="Cancelar"
-              size="small"
-              icon="pi pi-times"
-              severity="secondary"
-              [disabled]="m.status === 'cancelled'"
-              (click)="cancel(m.id)"
-            />
-            <p-button
-              label="Reabrir"
-              size="small"
-              icon="pi pi-refresh"
-              severity="contrast"
-              [disabled]="m.status === 'pending'"
-              (click)="reopen(m.id)"
-            />
+          <div class="flex gap-2 align-items-center">
+            <p-dropdown
+              [options]="statusChangeOptions"
+              [(ngModel)]="m.status"
+              optionLabel="label"
+              optionValue="value"
+              (onChange)="changeStatus(m.id, $event.value)"
+              styleClass="status-change w-12rem"
+            ></p-dropdown>
           </div>
         </td>
       </tr>

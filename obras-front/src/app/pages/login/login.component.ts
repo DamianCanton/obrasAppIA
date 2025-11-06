@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import {
   FormBuilder,
   FormGroup,
@@ -12,7 +12,12 @@ import { InputTextModule } from 'primeng/inputtext';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { CommonModule } from '@angular/common';
-import { AuthService } from '../../services/auth.service';
+import { AuthService, User, UserRole } from '../../services/auth.service';
+
+interface AuthResponse {
+  accessToken: string;
+  user: User & { architectId?: number | null };
+}
 
 @Component({
   selector: 'app-login',
@@ -30,42 +35,60 @@ import { AuthService } from '../../services/auth.service';
 })
 export class LoginComponent {
   form: FormGroup;
+  submitting = signal(false);
 
   constructor(
     private fb: FormBuilder,
     private api: ApiService,
     private router: Router,
     private auth: AuthService,
-    private msg: MessageService
+    private msg: MessageService,
   ) {
     this.form = this.fb.group({
-      emailOrName: ['', Validators.required],
+      email: ['', [Validators.required, Validators.email]],
       password: ['', Validators.required],
     });
   }
 
   submit() {
-    if (this.form.invalid) return;
+    if (this.form.invalid || this.submitting()) return;
 
-    this.api.request('POST', 'auth/login', this.form.value).subscribe({
-      next: (res: any) => {
-        this.auth.setAuth(res.user, res.role);
-        if (res.role === 'architect') {
-          this.router.navigate(['/']); // ✅ absoluta
-        } else if (res.role === 'worker') {
-          this.router.navigate(['/worker/elements']); // ✅ absoluta
+    this.submitting.set(true);
+    this.api.request<AuthResponse>('POST', 'auth/login', this.form.value).subscribe({
+      next: (res) => {
+        const { user, accessToken } = res;
+        const normalizedUser: User = {
+          id: user.id,
+          name: user.name ?? user.email,
+          email: user.email,
+          role: user.role as UserRole,
+          architectId: user.architectId ?? null,
+        };
+
+        this.auth.setSession(normalizedUser, accessToken);
+
+        if (normalizedUser.role === 'ADMIN') {
+          this.router.navigate(['/']);
+        } else if (normalizedUser.role === 'WORKER') {
+          this.router.navigate(['/worker/elements']);
         } else {
-          throw new Error('Role no reconocido');
+          throw new Error('Rol no reconocido');
         }
       },
       error: (err) => {
+        const detail =
+          err?.status === 401
+            ? 'Credenciales invalidas'
+            : err?.error?.message ?? 'No se pudo iniciar sesion';
+
         this.msg.add({
           severity: 'error',
-          summary: 'Error',
-          detail: err?.error?.message || 'Credenciales inválidas',
-          life: 3000,
+          summary: 'Inicio de sesion',
+          detail,
+          life: 4000,
         });
       },
+      complete: () => this.submitting.set(false),
     });
   }
 }

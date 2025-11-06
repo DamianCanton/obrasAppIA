@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+﻿import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { DrawerModule } from 'primeng/drawer';
@@ -10,31 +10,60 @@ import { WorkerMenu } from './worker-menu';
   standalone: true,
   imports: [CommonModule, RouterOutlet, DrawerModule, ButtonModule, WorkerMenu],
   template: `
-  <div class="h-screen flex flex-column">
-    <header class="surface-200 p-3 flex align-items-center justify-content-between">
-      <div class="text-xl font-bold">Panel de Obrero</div>
-      <div class="lg:hidden">
-        <p-button (click)="sidebarVisible = true" icon="pi pi-bars"></p-button>
-      </div>
-    </header>
-
-    <div class="flex flex-1 min-h-0">
-      <!-- Sidebar fijo desktop (menú worker) -->
-      <aside class="hidden lg:block shrink-0 lg:w-12rem surface-100 p-2">
-        <app-worker-menu></app-worker-menu>
+    <div class="min-h-screen flex flex-column lg:flex-row surface-ground text-color">
+      <aside
+        class="hidden lg:flex flex-column w-18rem surface-card shadow-4 border-round-none"
+      >
+        <div class="px-4 py-5 border-bottom-1 surface-border">
+          <span class="text-xl font-semibold text-900">Panel Obrero</span>
+          <p class="text-sm text-600 mt-1">
+            Gestiona tus elementos, faltantes y notas
+          </p>
+        </div>
+        <app-worker-menu
+          class="p-3 flex-1"
+          (navigate)="sidebarVisible = false"
+        ></app-worker-menu>
       </aside>
 
-      <!-- Drawer mobile -->
-      <p-drawer [(visible)]="sidebarVisible" position="left" header="Menú" [modal]="true" closable="false">
-        <app-worker-menu></app-worker-menu>
-      </p-drawer>
+      <div class="flex-1 flex flex-column min-h-0">
+        <header
+          class="lg:hidden surface-card flex align-items-center justify-content-between px-4 py-3 shadow-2"
+        >
+          <div>
+            <span class="text-lg font-semibold text-900">Panel Obrero</span>
+            <p class="text-xs text-600 m-0">Gestiona tus tareas diarias</p>
+          </div>
+          <button
+            pButton
+            type="button"
+            icon="pi pi-bars"
+            severity="secondary"
+            text
+            (click)="sidebarVisible = true"
+            aria-label="Abrir menu"
+          ></button>
+        </header>
 
-      <!-- Main -->
-      <main class="flex-1 overflow-auto p-3 surface-50">
-        <router-outlet></router-outlet>
-      </main>
+        <p-drawer
+          [visible]="sidebarVisible"
+          (visibleChange)="sidebarVisible = $event"
+          position="left"
+          header="Menu"
+          [modal]="true"
+          [showCloseIcon]="true"
+        >
+          <app-worker-menu
+            class="w-18rem"
+            (navigate)="sidebarVisible = false"
+          ></app-worker-menu>
+        </p-drawer>
+
+        <main class="flex-1 overflow-auto px-3 py-4 sm:px-5">
+          <router-outlet></router-outlet>
+        </main>
+      </div>
     </div>
-  </div>
   `,
 })
 export class WorkerLayout {

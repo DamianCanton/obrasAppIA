@@ -1,0 +1,6 @@
+*** Begin Patch
+*** Update File: obras-front/src/app/pages/worker-notes/worker-notes.ts
+@@
+-import { Missing, MissingStatus, Note } from '../../models/interfaces.model';
++import { Missing, MissingStatus } from '../../models/interfaces.model';
+*** End Patch

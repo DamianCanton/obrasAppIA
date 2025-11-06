@@ -129,6 +129,14 @@ export class NoteEditor implements OnInit {
   save() {
     if (this.form.invalid || this.busy) return;
     const userId = this.auth.user()?.id!;
+    const actorType = this.auth.actorType();
+    if (!actorType) {
+      this.msg.add({
+        severity: 'error',
+        summary: 'No se pudo identificar el rol del usuario',
+      });
+      return;
+    }
     this.busy = true;
 
     const dtoBase = {
@@ -142,7 +150,7 @@ export class NoteEditor implements OnInit {
       const dto: NoteUpdateDto = {
         ...dtoBase,
         updatedBy: userId,
-        updatedByType: 'architect',
+        updatedByType: actorType,
       };
       this.notesSvc
         .update(this.noteId, dto)
@@ -165,7 +173,7 @@ export class NoteEditor implements OnInit {
         ...dtoBase,
         elementId: this.elementId,
         createdBy: userId,
-        createdByType: 'architect',
+        createdByType: actorType,
       };
       this.notesSvc
         .create(dto)
@@ -199,9 +207,17 @@ export class NoteEditor implements OnInit {
 
   private delete() {
     const userId = this.auth.user()?.id!;
+    const actorType = this.auth.actorType();
+    if (!actorType) {
+      this.msg.add({
+        severity: 'error',
+        summary: 'No se pudo identificar el rol del usuario',
+      });
+      return;
+    }
     this.busy = true;
     this.notesSvc
-      .delete(this.noteId!, { deletedBy: userId, deletedByType: 'architect' })
+      .delete(this.noteId!, { deletedBy: userId, deletedByType: actorType })
       .pipe(finalize(() => (this.busy = false)))
       .subscribe({
         next: () => {

@@ -1,0 +1,113 @@
+<p-toast></p-toast>
+
+<div class="flex flex-column gap-4">
+  <div class="flex flex-column xl:flex-row gap-4">
+    <div class="surface-card shadow-2 border-round-2xl p-4 lg:p-5 flex-1">
+      <div class="flex flex-column gap-2 mb-4">
+        <h2 class="text-2xl font-semibold text-900 m-0">Nueva nota</h2>
+        <p class="text-sm text-600 m-0">
+          Registra detalles relevantes y vincula la nota con elementos o faltantes si corresponde.
+        </p>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-column gap-3">
+        <div class="flex flex-column gap-2">
+          <label class="text-sm font-medium text-700">Titulo (opcional)</label>
+          <input
+            pInputText
+            formControlName="title"
+            maxlength="120"
+            placeholder="Ej: Inspeccion de equipo"
+          />
+        </div>
+
+        <div class="flex flex-column gap-2">
+          <label class="text-sm font-medium text-700">Detalle</label>
+          <textarea
+            pInputTextarea
+            formControlName="text"
+            rows="4"
+            placeholder="Escribe la informacion que desees registrar"
+          ></textarea>
+        </div>
+
+        <div class="flex flex-column gap-2">
+          <label class="text-sm font-medium text-700">Asociar a un elemento (opcional)</label>
+          <p-dropdown
+            formControlName="elementId"
+            [options]="elementOptions()"
+            optionLabel="label"
+            optionValue="value"
+            [showClear]="true"
+            placeholder="Sin asociacion"
+          ></p-dropdown>
+        </div>
+
+        <div class="flex flex-column gap-2">
+          <label class="text-sm font-medium text-700">Asociar a un faltante (opcional)</label>
+          <p-dropdown
+            formControlName="missingId"
+            [options]="missingOptions()"
+            optionLabel="label"
+            optionValue="value"
+            [showClear]="true"
+            placeholder="Sin asociacion"
+          ></p-dropdown>
+        </div>
+
+        <button
+          pButton
+          type="submit"
+          icon="pi pi-save"
+          label="Guardar nota"
+          severity="warn"
+          class="self-start"
+          [disabled]="form.invalid"
+        ></button>
+      </form>
+    </div>
+
+    <div class="surface-card shadow-2 border-round-2xl p-4 lg:p-5 flex-1">
+      <div class="flex flex-column gap-2 mb-3">
+        <h2 class="text-2xl font-semibold text-900 m-0">Notas registradas</h2>
+        <p class="text-sm text-600 m-0">Consulta tus notas recientes y los elementos asociados.</p>
+      </div>
+
+      <ng-container *ngIf="notes().length; else emptyNotes">
+        <div class="flex flex-column gap-3">
+          <p-card *ngFor="let note of notes()" class="border-round-xl shadow-1">
+            <ng-template pTemplate="title">
+              <div class="flex align-items-center gap-2">
+                <span class="font-semibold text-900">{{ note.title || 'Nota sin titulo' }}</span>
+                <p-tag
+                  *ngIf="note.missing"
+                  severity="warn"
+                  [value]="statusLabel(note.missing.status)"
+                ></p-tag>
+              </div>
+            </ng-template>
+
+            <ng-template pTemplate="subtitle">
+              <span *ngIf="note.element">Elemento: {{ note.element.name }}</span>
+              <span *ngIf="note.missing">
+                · Faltante: {{ note.missing.element.name || 'Relacionado' }}
+              </span>
+            </ng-template>
+
+            <p class="text-700 whitespace-pre-line">{{ note.text }}</p>
+
+            <ng-template pTemplate="footer">
+              <small class="text-600">Creada el {{ note.createdAt | date: 'dd/MM/yyyy HH:mm' }}</small>
+            </ng-template>
+          </p-card>
+        </div>
+      </ng-container>
+
+      <ng-template #emptyNotes>
+        <div class="text-center py-5 text-600">
+          Todavia no registraste notas.
+        </div>
+      </ng-template>
+    </div>
+  </div>
+</div>

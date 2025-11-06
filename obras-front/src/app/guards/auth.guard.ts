@@ -1,10 +1,10 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router, ActivatedRouteSnapshot } from '@angular/router';
-import { AuthService } from '../services/auth.service';
+import { AuthService, UserRole } from '../services/auth.service';
 
-function roleHome(role: string | null): string {
-  if (role === 'worker') return '/worker/elements';
-  // default arquitecto
+function roleHome(role: UserRole | null): string {
+  if (role === 'WORKER') return '/worker/elements';
+  // default admin
   return '/';
 }
 
@@ -19,7 +19,7 @@ export const AuthGuard: CanActivateFn = (route: ActivatedRouteSnapshot) => {
   }
 
   // 2) Validar rol (si la ruta define roles)
-  const expectedRoles = route.data?.['roles'] as string[] | undefined;
+  const expectedRoles = route.data?.['roles'] as UserRole[] | undefined;
   const currentRole = auth.role();
 
   if (expectedRoles && currentRole && !expectedRoles.includes(currentRole)) {

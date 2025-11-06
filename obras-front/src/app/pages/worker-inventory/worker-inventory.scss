@@ -1,0 +1,14 @@
+:host ::ng-deep .actions-column {
+  width: 11rem;
+  text-align: right;
+}
+
+@media (max-width: 576px) {
+  :host ::ng-deep .hide-xs {
+    display: none !important;
+  }
+
+  :host ::ng-deep .actions-column {
+    width: 100%;
+  }
+}

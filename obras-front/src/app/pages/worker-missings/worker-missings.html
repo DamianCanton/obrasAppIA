@@ -1,0 +1,202 @@
+<p-toast></p-toast>
+
+<div class="flex flex-column gap-4">
+  <div class="flex flex-column xl:flex-row gap-4">
+    <div class="surface-card shadow-2 border-round-2xl p-4 lg:p-5 flex-1">
+      <div class="flex flex-column gap-2 mb-4">
+        <h2 class="text-2xl font-semibold text-900 m-0">Reportar faltante</h2>
+        <p class="text-sm text-600 m-0">
+          Completa la informacion y registra el inconveniente para que el equipo lo resuelva.
+        </p>
+      </div>
+
+      <form [formGroup]="createForm" (ngSubmit)="submitMissing()" class="flex flex-column gap-3">
+        <div class="flex flex-column gap-2">
+          <label class="text-sm font-medium text-700">Elemento</label>
+          <p-dropdown
+            formControlName="elementId"
+            [options]="elementOptions()"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Selecciona un elemento"
+            [filter]="true"
+            filterBy="label"
+            class="w-full"
+          ></p-dropdown>
+        </div>
+
+        <div class="flex flex-column gap-2">
+          <label class="text-sm font-medium text-700">Titulo</label>
+          <input pInputText formControlName="title" maxlength="140" placeholder="Describe brevemente el faltante" />
+        </div>
+
+        <div class="flex flex-column gap-2">
+          <label class="text-sm font-medium text-700">Detalle</label>
+          <textarea
+            pInputTextarea
+            formControlName="text"
+            rows="4"
+            placeholder="Contanos que sucedio y que necesitas"
+          ></textarea>
+        </div>
+
+        <div class="flex flex-column sm:flex-row gap-3">
+          <div class="flex-1 flex flex-column gap-2">
+            <label class="text-sm font-medium text-700">Estado inicial</label>
+            <p-dropdown
+              formControlName="status"
+              [options]="statusOptions"
+              optionLabel="label"
+              optionValue="value"
+            ></p-dropdown>
+          </div>
+
+          <div class="flex align-items-center gap-2">
+            <p-checkbox formControlName="urgent" [binary]="true" inputId="urgent"></p-checkbox>
+            <label for="urgent" class="text-sm text-700">Marcar como urgente</label>
+          </div>
+        </div>
+
+        <button
+          pButton
+          type="submit"
+          icon="pi pi-plus"
+          label="Crear faltante"
+          severity="warn"
+          class="self-start"
+          [disabled]="createForm.invalid"
+        ></button>
+      </form>
+    </div>
+
+    <div class="surface-card shadow-2 border-round-2xl p-4 lg:p-5 flex-1">
+      <div class="flex flex-column sm:flex-row sm:align-items-center sm:justify-content-between gap-3 mb-3">
+        <div>
+          <h2 class="text-2xl font-semibold text-900 m-0">Faltantes reportados</h2>
+          <p class="text-sm text-600 m-0">Seguimiento de los faltantes que registraste recientemente.</p>
+        </div>
+
+        <button
+          pButton
+          type="button"
+          icon="pi pi-refresh"
+          label="Actualizar"
+          severity="secondary"
+          class="w-full sm:w-auto"
+          (click)="refresh()"
+          [loading]="loading()"
+        ></button>
+      </div>
+
+      <p-table
+        [value]="missings()"
+        dataKey="id"
+        [loading]="loading()"
+        responsiveLayout="scroll"
+        styleClass="w-full"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Elemento</th>
+            <th>Estado</th>
+            <th>Urgente</th>
+            <th class="hide-xs">Creado</th>
+            <th class="actions-column">Acciones</th>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-missing>
+          <tr>
+            <td>
+              <div class="flex flex-column gap-1">
+                <span class="font-medium text-900">{{ missing.element?.name }}</span>
+                <small class="text-600 text-sm truncate" [title]="missing.title">{{ missing.title }}</small>
+              </div>
+            </td>
+            <td>
+              <p-tag
+                [severity]="missing.status === 'SE_PERDIO' ? 'danger' : missing.status === 'SE_ROMPIO' ? 'warn' : 'info'"
+                [value]="statusLabel(missing.status)"
+              />
+            </td>
+            <td>
+              <p-tag *ngIf="missing.urgent" severity="danger" value="Urgente" />
+              <span *ngIf="!missing.urgent" class="text-600">-</span>
+            </td>
+            <td class="hide-xs">{{ missing.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+            <td class="actions-column">
+              <button
+                pButton
+                type="button"
+                icon="pi pi-exchange"
+                label="Cambiar estado"
+                severity="secondary"
+                (click)="openStatusDialog(missing)"
+              ></button>
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="5" class="text-center py-5 text-600">Todavia no registraste faltantes.</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </div>
+</div>
+
+<p-dialog
+  header="Cambiar estado"
+  [visible]="statusDialogVisible()"
+  (visibleChange)="statusDialogVisible.set($event)"
+  [modal]="true"
+  [dismissableMask]="true"
+  [style]="{ width: '22rem' }"
+>
+  <form [formGroup]="statusForm" class="flex flex-column gap-3">
+    <div class="flex flex-column gap-2">
+      <label class="text-sm font-medium text-700">Nuevo estado</label>
+      <p-dropdown
+        formControlName="status"
+        [options]="statusOptions"
+        optionLabel="label"
+        optionValue="value"
+      ></p-dropdown>
+    </div>
+
+    <div class="flex flex-column gap-2">
+      <label class="text-sm font-medium text-700">Titulo de la nota (opcional)</label>
+      <input pInputText formControlName="noteTitle" placeholder="Ej: Cambio de estado" />
+    </div>
+
+    <div class="flex flex-column gap-2">
+      <label class="text-sm font-medium text-700">Justificacion</label>
+      <textarea
+        pInputTextarea
+        formControlName="noteText"
+        rows="4"
+        placeholder="Agrega detalles de la actualizacion"
+      ></textarea>
+    </div>
+
+    <div class="flex justify-content-end gap-2 mt-2">
+      <button
+        pButton
+        type="button"
+        label="Cancelar"
+        severity="secondary"
+        (click)="closeStatusDialog()"
+      ></button>
+      <button
+        pButton
+        type="button"
+        label="Guardar"
+        severity="warn"
+        (click)="changeStatus()"
+        [disabled]="statusForm.invalid"
+      ></button>
+    </div>
+  </form>
+</p-dialog>
